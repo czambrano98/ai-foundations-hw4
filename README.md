@@ -38,15 +38,16 @@ cd frontend && npm install && cd ..
 
 ## Running
 
-Two terminals, both from the `Homework 4` directory.
-
-**Terminal 1 — API (port 8000):**
+**Terminal 1 — API (port 8000), from the `backend/` folder:**
 
 ```bash
-.venv/Scripts/python -m uvicorn backend.main:app --reload --port 8000
+cd backend
+uvicorn main:app --reload --port 8000
+# or, using the project venv explicitly:
+# ../.venv/Scripts/python -m uvicorn main:app --reload --port 8000
 ```
 
-**Terminal 2 — site (port 5173):**
+**Terminal 2 — site (port 5173), from `frontend/`:**
 
 ```bash
 cd frontend && npm run dev
@@ -56,6 +57,14 @@ Then open **http://localhost:5173**.
 
 Vite proxies `/api` and `/images` to the backend, so the browser sees a single
 origin and there are no CORS issues in development.
+
+### Agent API key
+
+The chat agent calls a model through the Portkey gateway and needs
+`PORTKEY_API_KEY`. On first use the backend looks for it in, in order:
+`backend/.env`, `Homework 4/env.txt`, then the parent `AI Foundations/env.txt`
+(where it already lives). The agent is built lazily, so the rest of the API
+(products, auth) runs even without the key.
 
 ## API
 
@@ -69,15 +78,19 @@ origin and there are no CORS issues in development.
 | `POST /api/auth/signup` | Create an account; returns a session token |
 | `POST /api/auth/login` | Log in; returns a session token |
 | `GET /api/auth/me` | Current user from the `Bearer` token |
-| `POST /api/chat` | **Stub.** Returns a fixed reply; Problem 5 replaces it |
+| `POST /api/chat` | Shop agent: returns a reply plus product cards |
 
 Interactive docs at http://localhost:8000/docs while the backend runs.
 
 ## Layout
 
 ```
-backend/main.py          FastAPI app
+backend/main.py          FastAPI app (run: uvicorn main:app from backend/)
 backend/auth.py          Password hashing (PBKDF2) and signed session tokens
+backend/agent.py         Shop chat agent: prompt + Portkey model + tools wiring
+backend/tools.py         Read-only catalogue tools the agent can call
+backend/models.py        Pydantic / PydanticAI types (chat reply, product card)
+backend/prompts/prompt.md  System prompt (voice + safety); grows later
 scripts/add_category.py  Problem 2a category normalization
 scripts/add_image_bg.py  Per-photo background color sampling
 frontend/src/
@@ -97,8 +110,16 @@ PBKDF2-HMAC-SHA256 hashes with a per-user salt; plaintext is never stored. See
 `output/harness.md` for the full design. The seeded test user
 `test@campuscustoms.yale.edu` / `password` can be used to log in.
 
+## Chat agent
+
+The shop assistant (Problem 5) is a PydanticAI agent in `backend/agent.py`,
+loaded from `backend/prompts/prompt.md` and backed by `gpt-4o` through Portkey.
+It can call read-only catalogue tools (`backend/tools.py`) to look up products,
+prices, and per-size stock, and returns a reply plus the product ids to show as
+cards. The API hydrates those ids into real cards, so prices and stock are
+always from the database, never the model. See `output/harness.md` for the data
+flow and safety notes.
+
 ## Not built yet
 
-- **Chat is a stub.** The panel, message history and product-card rendering all
-  work; `POST /api/chat` returns a canned reply until Problem 5.
 - **No cart or checkout.** The database has no orders table.

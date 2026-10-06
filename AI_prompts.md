@@ -185,6 +185,51 @@ could be verified with the same code that creates new ones.
 
 ---
 
+## Problem 5 — PydanticAI Agent Backend
+
+**Initial prompt**
+
+> now, we're on Problem 5: PydanticAI agent backend
+> let's build the shop chatbot as a PydanticAI agent behind FastPI, plugged into
+> our front-end chat widget. let's put the API app in backend/main.py, which is
+> the file that we run with Uvicorn. we'll keep the agent as these four files next
+> to it (same idea as HW3):
+> 1. backend/prompts/prompt.md (system prompt, which we'll grow in later probs)
+> 2. backend/agent.py (agent entry and wiring)
+> 3. backend/tools.py (tools that the agent can call)
+> 4. backend/models.py (Pydantic and PydanticAI structured types)
+> In main.py, we'll expose a chat route so a message from the website retuns a
+> reply from the agent (and whatever else we need for products/auth). we'll need
+> our AI model API key for the agent (the portkey api key is an env file on the
+> AI foundations folder)
+> then, we'll put Campus Customs voice and safety basics into prompts/prompts.md
+> (in which we'll expand tools and safety later). we'll start or update types in
+> models.py for chat replies and/or product cards as needed
+> In output/harness.md, we'll note how the front end talks to FastAPI and how the
+> agent is loaded (prompt file + model)
+> Let's make sure that the backend runs from the backend/ folder like: uvicorn
+> main:app --reload --port 8000
+
+**Follow-up prompt**
+
+> Let's rerun, since the model flagged a message
+
+(This came after a safety classifier stopped a mid-task message during the
+password-calibration step; re-running continued the build without changing the
+plan.)
+
+**What was lacking after the first prompt**
+
+The instructions were complete, but the first working build had three issues that
+only surfaced when the agent was actually run: the catalogue search matched the
+query as one literal phrase (so "hoodies under $70" found nothing until retried
+as "hoodie"), the model sometimes emitted the output field as `product_id`
+instead of `product_ids` (silently dropping the cards until the schema was made
+strict), and the Portkey/Azure content filter returned a 400 on a jailbreak test
+that had to be caught and turned into a safe refusal rather than a server error.
+
+---
+
 <!-- Template for the next problem — copy, fill in, delete this comment.
 
 ## Problem N — [Title]

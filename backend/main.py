@@ -1,10 +1,13 @@
 """Campus Customs API.
 
-Read-only access to the product catalogue and inventory, plus a stub chat
-endpoint that the Problem 5 agent will replace.
+Read-only access to the product catalogue and inventory, account signup/login,
+and the shop chat agent (PydanticAI, see agent.py).
 
-Run from the Homework 4 directory:
-    .venv/Scripts/python -m uvicorn backend.main:app --reload --port 8000
+Run from the backend/ folder:
+    uvicorn main:app --reload --port 8000
+
+(The venv's uvicorn is at ../.venv/Scripts/uvicorn; or run
+ ../.venv/Scripts/python -m uvicorn main:app --reload --port 8000)
 """
 
 import json
@@ -17,7 +20,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from . import auth
+import openai
+
+import agent
+import auth
+from models import ChatResponse, ProductCard
+
+# A safe fallback when the model provider's content filter blocks a message
+# (common for prompt-injection and jailbreak attempts). Returning this keeps the
+# widget responsive and on-brand instead of surfacing a server error.
+CONTENT_FILTER_REPLY = (
+    "I can't help with that, but I'm happy to help you find Campus Customs gear. "
+    "What are you shopping for?"
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "campus_customs.db"
@@ -298,19 +313,63 @@ class ChatRequest(BaseModel):
     user_id: int | None = None
 
 
-@app.post("/api/chat")
-def chat(request: ChatRequest):
-    """Stub. Problem 5 replaces this with the real agent.
+def product_card(con: sqlite3.Connection, product_id: str) -> ProductCard | None:
+    """Build a canonical product card from the database for a product_id.
 
-    Returns the same shape the agent will, so the frontend doesn't change:
-    a reply string plus any products to render as cards.
+    The agent names products by id only; the real price, image, and stock come
+    from here, so the model can never surface an invented or stale value.
     """
-    return {
-        "reply": (
-            "Thanks for asking! I'm not connected to the shop assistant yet. "
-            "That comes in Problem 5. In the meantime you can browse the full "
-            "catalogue on the Products page."
-        ),
-        "products": [],
-        "stub": True,
-    }
+    row = con.execute(
+        "SELECT * FROM catalogue WHERE product_id = ?", (product_id,)
+    ).fetchone()
+    if row is None:
+        return None
+    total = con.execute(
+        "SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE product_id = ?",
+        (product_id,),
+    ).fetchone()[0]
+    product = row_to_product(row)
+    return ProductCard(
+        product_id=product["product_id"],
+        name=product["name"],
+        price=product["price"],
+        image_url=product["image_url"],
+        image_bg=product["image_bg"],
+        short_description=product["short_description"],
+        category=product["category"],
+        in_stock=total > 0,
+    )
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """Send a shopper message to the agent and return its reply plus cards.
+
+    The agent returns a message and a list of product ids. We hydrate those ids
+    into full cards here, dropping any id that does not resolve, so the response
+    the frontend renders is always backed by real catalogue rows.
+    """
+    message = request.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Message must not be empty")
+
+    try:
+        reply = await agent.run_chat(message)
+    except openai.BadRequestError as exc:
+        # The provider's content filter rejected the input (e.g. a jailbreak
+        # attempt). Deflect safely rather than erroring.
+        if "content_filter" in str(exc):
+            return ChatResponse(reply=CONTENT_FILTER_REPLY, products=[])
+        raise HTTPException(status_code=502, detail=f"Shop assistant unavailable: {exc}")
+    except Exception as exc:  # surface other agent/gateway failures as a clean 502
+        raise HTTPException(status_code=502, detail=f"Shop assistant unavailable: {exc}")
+
+    cards: list[ProductCard] = []
+    if reply.product_ids:
+        with connect() as con:
+            for product_id in reply.product_ids:
+                card = product_card(con, product_id)
+                if card is not None:
+                    cards.append(card)
+
+    return ChatResponse(reply=reply.message, products=cards)
