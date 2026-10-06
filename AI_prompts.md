@@ -86,11 +86,17 @@ without resolving it.
 > we'll also need an API to read the database. we can start with backend/main.py
 > for the products and images, which we can then grow in Problem 5
 
-**Follow-up prompt**
+**Follow-up prompts**
 
 > (answering Claude's question on voice) Tone: warm & personal — first-person,
 > conversational, leaning on the family-business story. Emphasis: craft & quality
 > and belonging.
+
+> Instead of putting the website locally, can we connect it to my Github? but,
+> let's not push it live just yet, let's leave it in draft mode
+
+> (answering Claude's question on what "draft mode" meant) Local commits only,
+> no push. When ready, I'll create the repo on GitHub and hand over the URL.
 
 **What was lacking after the first prompt**
 
@@ -98,6 +104,12 @@ The first prompt specified the whole build but left "my voice" undefined, so
 Claude had everything it needed except the one input required to write the Home
 and About Us copy — it had to stop and ask for a tone before that part could be
 written.
+
+**Note on the second follow-up**
+
+"Draft mode" was ambiguous between *private repo* and *nothing pushed at all*, and
+the two differ in whether code leaves the machine — so Claude set up the local
+repository and committed, then asked before doing anything outward-facing.
 
 ---
 

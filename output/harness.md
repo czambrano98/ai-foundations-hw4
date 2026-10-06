@@ -236,6 +236,35 @@ every page — collapsed to a launcher button in the bottom right, expanding to 
   `?category=hoodie` returns 25.
 - Unknown product id returns 404 rather than a server error.
 
+### Version control
+
+The repository root is **`Homework 4/`**, not the `AI Foundations` folder — that
+keeps other coursework and a 95 MB `my-app/node_modules` out of history.
+
+Status: **local only, by choice.** Commits exist on this machine; nothing has
+been pushed to a remote. To connect it later, create an empty repo on GitHub and
+run:
+
+```bash
+git remote add origin <url>
+git push -u origin main
+```
+
+What's tracked (37 files) and what isn't:
+
+| Excluded | Why |
+|---|---|
+| `node_modules/` (95 MB) | Reinstallable from `package-lock.json` |
+| `.venv/` (37 MB) | Reinstallable from `backend/requirements.txt` |
+| `data/` (4 MB) | Fully reproducible: `unzip data.zip` + `scripts/add_category.py`. Committing the binary `.db` would churn history every time the category script runs. |
+| `dist/` | Build output |
+| `.env` | Pre-emptive — the Problem 5 agent will need an API key, and it must never be committed |
+
+`data.zip` **is** committed as the source of truth, so a fresh clone can rebuild
+the database from scratch. Note it contains the three seeded user rows with
+PBKDF2 password hashes — fixture data from the assignment, not real credentials,
+but worth remembering before making the repo public.
+
 ### Carried into Problem 5
 
 - The chat stub needs replacing with a real agent; the response contract is
