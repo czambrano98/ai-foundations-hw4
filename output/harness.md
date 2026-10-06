@@ -589,3 +589,77 @@ not commands.
   refused with no prompt leak; provider content-filter blocks come back as the
   safe refusal.
 - Empty message returns 400.
+
+---
+
+## Problem 6 — Tools: Product Info and Stock
+
+Replaced the single untyped `get_product_details` dict with focused, typed
+lookup tools, one per kind of question. Each returns a Pydantic model (defined
+in `models.py`) rather than a loose dict, so the shape is self-documenting and
+the model sees clean structured fields.
+
+### The tools
+
+| Tool | Returns | Answers |
+|---|---|---|
+| `search_catalogue(query, category?, max_results)` | list of summaries | "what do you have", find the product_id to look up |
+| `get_product_description(product_id)` | `ProductDescription` | what a product is, colors, material, look |
+| `get_price(product_id)` | `ProductPrice` | how much it costs |
+| `get_stock(product_id, size?)` | `StockReport` | availability, by size when asked |
+| `list_categories()` | list of `{category, count}` | what kinds of things are sold |
+
+All are read-only. The agent resolves a name to an id with `search_catalogue`,
+then calls the lookup tool for whatever was asked. The prompt now routes price
+questions to `get_price`, stock/size questions to `get_stock`, and description
+questions to `get_product_description`, and forbids stating a price or
+availability that did not come from a tool.
+
+### Which fields each lookup returns, and why
+
+**`ProductDescription`**: `product_id`, `name`, `category`, `description`,
+`colors`. The fields a shopper means by "what is it" — no price or stock, so a
+"what's it like" question does not drag along numbers that might then be quoted
+loosely. `colors` is parsed from the JSON-in-TEXT column so the model gets a real
+list.
+
+**`ProductPrice`**: `product_id`, `name`, `price`. Deliberately just the number
+and what it belongs to. Keeping price in its own tool and type makes it the
+single authoritative source, and leaves no other field for the model to confuse
+with the price.
+
+**`StockReport`**: the important one, chosen so the agent can always be clear
+about availability:
+- `sizes` — per-size `{size, quantity, in_stock}`. One entry when the shopper
+  named a size, the full run otherwise. This is what lets the agent answer "is it
+  in M" precisely.
+- `available_sizes` — every size currently buyable, *always* the full list even
+  when one size was asked. This is what lets the agent offer an alternative ("XL
+  is sold out, but S, M, L and XXL are in stock") instead of a dead end.
+- `requested_size` — set when the shopper named a size, so the agent knows to
+  answer that size specifically and to call out an out-of-stock clearly.
+- `in_stock` — scoped: for a requested size it reflects that size; otherwise
+  whether anything is in stock. So the one boolean always matches the question.
+- `total_stock` — kept for "how many do you have" style questions.
+
+Sizes come back in wearing order (XS to XXL), not SQL's alphabetical order.
+`get_stock` also accepts spoken sizes ("medium" to "M") and returns a clear
+message for an unrecognized size or product id, rather than failing.
+
+### Grounding: the agent cannot invent prices or stock
+
+Prices and quantities only ever reach the shopper through these tools, which read
+`campus_customs.db` directly. The prompt forbids estimating or rounding. Product
+cards shown in the widget are still hydrated from the database by `/api/chat`
+(Problem 5), so even the card prices never come from the model.
+
+### Verified
+
+- Direct tool tests on `baseball-left-chest-crewneck` (XS and XL sold out):
+  `get_price` returns $58; `get_stock("XL")` reports sold out and lists
+  `available_sizes` [S, M, L, XXL]; "medium" resolves to M; an unknown size and
+  an unknown id each return a clear message.
+- Live agent: "Is the Baseball Left Chest Crewneck available in XL?" replies that
+  XL is sold out and names the sizes that are in stock. "How much is it and what
+  sizes are in stock?" replies $58 with the in-stock sizes and names XS and XL as
+  sold out.

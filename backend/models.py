@@ -28,6 +28,63 @@ class ProductCard(BaseModel):
     in_stock: bool
 
 
+class ProductDescription(BaseModel):
+    """Return type for the description lookup tool.
+
+    Carries the fields a shopper asks about when they want to know what a
+    product *is*: its name, what kind of garment it is, the full description,
+    and the colors it comes in. Price and stock are deliberately separate tools,
+    so the model asks for exactly what it needs.
+    """
+
+    product_id: str
+    name: str
+    category: str
+    description: str
+    colors: list[str]
+
+
+class ProductPrice(BaseModel):
+    """Return type for the price lookup tool.
+
+    Just the product and its price. Narrow on purpose: a price question should
+    not depend on, or drag along, description or stock data, and the single
+    authoritative number comes straight from the database.
+    """
+
+    product_id: str
+    name: str
+    price: float
+
+
+class SizeStock(BaseModel):
+    """Stock for one size."""
+
+    size: str
+    quantity: int
+    in_stock: bool
+
+
+class StockReport(BaseModel):
+    """Return type for the stock lookup tool.
+
+    `sizes` is the per-size breakdown the shopper asked about (one size if they
+    named one, otherwise the full run). `available_sizes` always lists every
+    size currently buyable, so the agent can offer an alternative when the
+    requested size is out. `requested_size` is set when the shopper named a
+    size, so the agent knows to answer that size specifically and say clearly if
+    it is out of stock.
+    """
+
+    product_id: str
+    name: str
+    sizes: list[SizeStock]
+    available_sizes: list[str]
+    total_stock: int
+    in_stock: bool
+    requested_size: str | None = None
+
+
 class AgentReply(BaseModel):
     """Structured output the agent returns.
 

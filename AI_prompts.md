@@ -230,6 +230,38 @@ that had to be caught and turned into a safe refusal rather than a server error.
 
 ---
 
+## Problem 6 — Tools: Product Info and Stock
+
+**Initial prompt**
+
+> now, we're Problem 6: Tools: product info and stock
+> let's give the agent tools that look up real information from
+> campus_customs.db: 1. product description 2. price, and 3. how many are in
+> stock (by size when the customer asks). the agent must use the database, it
+> cannot invent prices or quantities. if a size is out of stock, then we need to
+> say so clearly
+> then we'll expand prompts/prompt.md so the agent knows to call these tools for
+> price and stock questions. we'll add or update return types in models.py
+> In output/harness.md, we'll list each tool and explain which model fields we
+> chose for lookup results and why
+
+**Follow-up prompt**
+
+> (none needed — the three lookup types, the grounding requirement, the
+> out-of-stock clarity, the prompt expansion, the typed returns, and the harness
+> note were all specified, so it built and verified in one pass.)
+
+**What was lacking after the first prompt**
+
+Nothing was missing from the instructions. The one design judgment left open was
+how finely to split the tools: Problem 5 already had a single rich
+`get_product_details`, and the choice to break it into three narrow typed tools
+(description, price, stock) was made to match the three items the prompt listed
+and to keep price and stock as single authoritative sources the model cannot
+blur together.
+
+---
+
 <!-- Template for the next problem — copy, fill in, delete this comment.
 
 ## Problem N — [Title]

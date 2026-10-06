@@ -21,7 +21,13 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from models import AgentReply
-from tools import get_product_details, list_categories, search_catalogue
+from tools import (
+    get_price,
+    get_product_description,
+    get_stock,
+    list_categories,
+    search_catalogue,
+)
 
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent  # Homework 4/
@@ -91,7 +97,13 @@ def get_agent() -> Agent[None, AgentReply]:
         model,
         output_type=AgentReply,
         system_prompt=load_prompt(),
-        tools=[search_catalogue, get_product_details, list_categories],
+        tools=[
+            search_catalogue,
+            get_product_description,
+            get_price,
+            get_stock,
+            list_categories,
+        ],
         # Allow a couple of retries so a malformed tool call or output (e.g. a
         # mistyped field name) is corrected rather than surfaced as an error.
         retries=2,
