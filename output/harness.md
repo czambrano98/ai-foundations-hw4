@@ -269,33 +269,39 @@ but worth remembering before making the repo public.
 
 ## Problem 3a — Design Pass and Image Repair
 
-### The product photos had black backgrounds
+### The product photos: tried whitening, reverted
 
-**73 of the 102 supplied JPGs are composited on pure black.** On a light
-storefront this reads as heavy and unprofessional, and no amount of CSS fixes it
-because the black is baked into the pixels.
+**73 of the 102 supplied JPGs are composited on pure black**, while the other 29
+ship on white or cream. The mixed backgrounds are a property of the source data,
+not of our CSS, so no stylesheet change makes them consistent.
 
-`scripts/whiten_product_images.py` flood-fills the background inward from the
-image border and writes white-background copies to `data/products_web/`. The
-backend prefers that directory and falls back to `data/products/`, so deleting
-the output folder reverts the change. Originals are never modified.
+We built `scripts/whiten_product_images.py` to flood-fill the black background
+to white, then **reverted it on review** — the whitened images looked worse than
+the originals in context. The backend serves `data/products/` directly again and
+the script has been removed. It is recoverable from git history at commit
+`187ef34` if we ever want to revisit.
 
-**The threshold matters more than it looks.** A first attempt using a tolerance
-of 60 destroyed the garments: the fill leaked through the shadowed folds of a
-navy hoodie and dissolved the whole product into white. Measuring the actual
-pixels explained why.
+**Worth keeping from the attempt**, in case this comes up again:
 
-| Region | RGB |
-|---|---|
-| Background | exactly `(0, 0, 0)` |
-| Navy garment, darkest folds | sum of roughly 40 to 180 across channels |
+- A first pass using a flood-fill tolerance of 60 **destroyed the garments**. The
+  fill leaked through the shadowed folds of a navy hoodie and dissolved the whole
+  product into white.
+- Measuring the pixels explained it:
 
-So the fill only accepts pixels whose channels sum to **6 or less**. That is
-tight enough to never reach the garment and loose enough to take the
-antialiased edge. Verified visually on a navy hoodie (the hardest case, being
-closest in value to the background) and by scanning every output for images that
-came back more than 92% white. Five flagged, all false positives: cream and
-white garments that are legitimately pale.
+  | Region | RGB |
+  |---|---|
+  | Background | exactly `(0, 0, 0)` |
+  | Navy garment, darkest folds | sum of roughly 40 to 180 across channels |
+
+- A tolerance of **6** separates them cleanly: tight enough never to reach the
+  garment, loose enough to take the antialiased edge. That version worked
+  technically; it was rejected on aesthetics, not correctness.
+
+**Open question for later:** the catalogue mixes black-background and
+white-background photography, so the product grid will look uneven whatever
+frame we use. Options if it starts to bother us: a uniform dark image tile, a
+per-image background sampled from the photo's own corner, or sourcing
+replacement photography.
 
 ### Design direction: casual but sophisticated
 
