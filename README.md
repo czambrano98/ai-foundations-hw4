@@ -66,6 +66,9 @@ origin and there are no CORS issues in development.
 | `GET /api/products` | Product grid. Optional `?category=` and `?search=` |
 | `GET /api/products/{id}` | Single product including per-size stock |
 | `GET /images/{file}.jpg` | Product photography from `data/products/` |
+| `POST /api/auth/signup` | Create an account; returns a session token |
+| `POST /api/auth/login` | Log in; returns a session token |
+| `GET /api/auth/me` | Current user from the `Bearer` token |
 | `POST /api/chat` | **Stub.** Returns a fixed reply; Problem 5 replaces it |
 
 Interactive docs at http://localhost:8000/docs while the backend runs.
@@ -74,10 +77,12 @@ Interactive docs at http://localhost:8000/docs while the backend runs.
 
 ```
 backend/main.py          FastAPI app
+backend/auth.py          Password hashing (PBKDF2) and signed session tokens
 scripts/add_category.py  Problem 2a category normalization
 scripts/add_image_bg.py  Per-photo background color sampling
 frontend/src/
-  api.ts                 fetch helpers, price/label formatting
+  api.ts                 fetch helpers, price/label formatting, auth calls
+  auth.tsx               React auth context (login/signup/logout, session)
   types.ts               shared TypeScript interfaces
   components/            NavBar, ProductCard, ChatPanel
   pages/                 Home, Products, ProductDetail, About, Login, SignUp
@@ -85,10 +90,15 @@ output/harness.md        Running design + data notes
 AI_prompts.md            Prompt log for the assignment
 ```
 
+## Accounts
+
+Create-account and login are built (Problem 4). Passwords are stored as
+PBKDF2-HMAC-SHA256 hashes with a per-user salt; plaintext is never stored. See
+`output/harness.md` for the full design. The seeded test user
+`test@campuscustoms.yale.edu` / `password` can be used to log in.
+
 ## Not built yet
 
 - **Chat is a stub.** The panel, message history and product-card rendering all
   work; `POST /api/chat` returns a canned reply until Problem 5.
-- **Auth is a stub.** Log in and Create account render and validate, but submit
-  to nothing. The `users` table already holds PBKDF2-hashed passwords.
 - **No cart or checkout.** The database has no orders table.

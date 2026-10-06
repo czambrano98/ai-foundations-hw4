@@ -8,13 +8,16 @@ Run from the Homework 4 directory:
 """
 
 import json
+import re
 import sqlite3
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+
+from . import auth
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "campus_customs.db"
@@ -176,6 +179,118 @@ def get_product(product_id: str):
     product["in_stock"] = product["total_stock"] > 0
     product["available_sizes"] = [s["size"] for s in product["inventory"] if s["in_stock"]]
     return product
+
+
+# --- Accounts -------------------------------------------------------------
+
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+MIN_PASSWORD_LENGTH = 8
+
+
+class SignupRequest(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+    password: str
+    confirm_password: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+def public_user(row: sqlite3.Row) -> dict:
+    """A user shaped for the client. Never includes password_hash."""
+    return {
+        "id": row["id"],
+        "first_name": row["first_name"],
+        "last_name": row["last_name"],
+        "name": row["name"],
+        "email": row["email"],
+    }
+
+
+def current_user(authorization: str | None = Header(default=None)):
+    """FastAPI dependency: resolve the bearer token to a user row, or 401."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    user_id = auth.read_token(authorization.removeprefix("Bearer ").strip())
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    with connect() as con:
+        row = con.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if row is None:
+        raise HTTPException(status_code=401, detail="Account no longer exists")
+    return row
+
+
+@app.post("/api/auth/signup")
+def signup(request: SignupRequest):
+    first = request.first_name.strip()
+    last = request.last_name.strip()
+    email = request.email.strip().lower()
+
+    if not first or not last:
+        raise HTTPException(status_code=400, detail="First and last name are required")
+    if not EMAIL_RE.match(email):
+        raise HTTPException(status_code=400, detail="Please enter a valid email address")
+    if len(request.password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Password must be at least {MIN_PASSWORD_LENGTH} characters",
+        )
+    if request.password != request.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    # Hash before touching the database: the plaintext password never reaches
+    # a query, a log, or a stored column.
+    password_hash = auth.hash_password(request.password)
+    full_name = f"{first} {last}"
+
+    with connect() as con:
+        existing = con.execute(
+            "SELECT 1 FROM users WHERE email = ?", (email,)
+        ).fetchone()
+        if existing:
+            raise HTTPException(
+                status_code=409, detail="An account with that email already exists"
+            )
+        cursor = con.execute(
+            "INSERT INTO users (name, email, password_hash, first_name, last_name) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (full_name, email, password_hash, first, last),
+        )
+        con.commit()
+        row = con.execute(
+            "SELECT * FROM users WHERE id = ?", (cursor.lastrowid,)
+        ).fetchone()
+
+    return {"token": auth.make_token(row["id"]), "user": public_user(row)}
+
+
+@app.post("/api/auth/login")
+def login(request: LoginRequest):
+    email = request.email.strip().lower()
+    with connect() as con:
+        row = con.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+
+    # Same error whether the email is unknown or the password is wrong, so the
+    # response does not reveal which emails have accounts. verify_password is
+    # still called on a dummy hash when the user is missing, to keep the timing
+    # of the two cases similar.
+    if row is None:
+        auth.verify_password(request.password, auth.hash_password("dummy"))
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+    if not auth.verify_password(request.password, row["password_hash"]):
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+
+    return {"token": auth.make_token(row["id"]), "user": public_user(row)}
+
+
+@app.get("/api/auth/me")
+def me(user: sqlite3.Row = Depends(current_user)):
+    return {"user": public_user(user)}
 
 
 class ChatRequest(BaseModel):

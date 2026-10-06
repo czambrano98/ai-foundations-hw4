@@ -1,8 +1,17 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth'
 
 export default function NavBar() {
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'nav-link active' : 'nav-link'
+
+  function handleLogout() {
+    logout()
+    navigate('/')
+  }
 
   return (
     <header className="nav">
@@ -21,12 +30,26 @@ export default function NavBar() {
           <NavLink to="/about" className={linkClass}>
             About Us
           </NavLink>
-          <NavLink to="/login" className={linkClass}>
-            Log in
-          </NavLink>
-          <NavLink to="/signup" className="nav-link cta">
-            Create account
-          </NavLink>
+
+          {user ? (
+            <>
+              <span className="nav-greeting">
+                Hi, {user.first_name ?? user.name}
+              </span>
+              <button type="button" className="nav-link cta" onClick={handleLogout}>
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login" className={linkClass}>
+                Log in
+              </NavLink>
+              <NavLink to="/signup" className="nav-link cta">
+                Create account
+              </NavLink>
+            </>
+          )}
         </nav>
       </div>
     </header>

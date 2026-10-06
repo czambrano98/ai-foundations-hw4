@@ -1,9 +1,29 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth'
 
 export default function Login() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    setError(null)
+    setSubmitting(true)
+    try {
+      await login(email, password)
+      navigate('/')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not log in')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div className="page">
@@ -12,17 +32,9 @@ export default function Login() {
           <hr className="rule" />
           <h1 style={{ fontSize: '1.9rem' }}>Log in</h1>
 
-          <div className="form-note">
-            Accounts aren't wired up yet. Authentication arrives in a later
-            problem, and this form is the shape of what's coming.
-          </div>
+          {error && <div className="form-error">{error}</div>}
 
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              alert('Login is not connected yet.')
-            }}
-          >
+          <form onSubmit={handleSubmit}>
             <div className="field">
               <label htmlFor="email">Email</label>
               <input
@@ -31,6 +43,7 @@ export default function Login() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@yale.edu"
+                autoComplete="email"
                 required
               />
             </div>
@@ -42,13 +55,14 @@ export default function Login() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder="••••••••"
+                placeholder="Your password"
+                autoComplete="current-password"
                 required
               />
             </div>
 
-            <button type="submit" className="btn btn-primary btn-block">
-              Log in
+            <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+              {submitting ? 'Logging in...' : 'Log in'}
             </button>
           </form>
 

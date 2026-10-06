@@ -126,6 +126,21 @@ a:hover { color: var(--brass); }
 }
 .nav-link.cta:hover { background: var(--navy-deep); color: #fff; }
 
+/* The logout control is a <button> but should read as a nav CTA. */
+button.nav-link {
+  border: none;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.92rem;
+}
+
+.nav-greeting {
+  color: var(--slate);
+  font-size: 0.9rem;
+  padding: 8px 6px 8px 14px;
+  font-style: italic;
+}
+
 /* ---------- Buttons ---------- */
 
 .btn {
@@ -429,6 +444,15 @@ a:hover { color: var(--brass); }
   font-size: 0.85rem;
   color: var(--slate);
   margin-bottom: 26px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+.form-error {
+  background: #fbeeec;
+  border-left: 2px solid #b5533f;
+  padding: 13px 16px;
+  font-size: 0.88rem;
+  color: #8f3c2c;
+  margin-bottom: 24px;
   border-radius: 0 var(--radius) var(--radius) 0;
 }
 .form-foot { text-align: center; margin-top: 22px; font-size: 0.89rem; color: var(--slate); }

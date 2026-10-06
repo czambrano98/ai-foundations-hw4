@@ -389,5 +389,105 @@ them, on the grounds that they are working notes rather than site copy.
   already fixed.
 - The brand facts above (1973, 57 Broadway, in-house printing, family-run) are
   the raw material for the agent's system prompt.
-- Auth is still unbuilt — `users.password_hash` is PBKDF2-SHA256 and must never
-  enter the agent's context.
+- Auth now exists (Problem 4). `users.password_hash` must never enter the
+  agent's context, and the agent should only ever see the public user shape
+  (`id`, `name`, `email`), never the hash.
+
+---
+
+## Problem 4 — Create Account and Login
+
+### What we store for a user
+
+New accounts are written to the existing `users` table. For each account:
+
+| Column | Source | Notes |
+|---|---|---|
+| `id` | auto | Primary key |
+| `first_name`, `last_name` | signup form | Collected separately so the site can greet someone by first name |
+| `name` | derived | `first_name + " " + last_name`; the column is `NOT NULL`, so it is always set |
+| `email` | signup form | Lowercased and trimmed; `UNIQUE`, so duplicate signups are rejected with 409 |
+| `password_hash` | derived | A one-way hash. **The plaintext password is never stored, logged, or put in a query.** |
+| `created_at` | default | `datetime('now')` |
+
+What the API hands back to the client is a **public user shape** with only
+`id`, `first_name`, `last_name`, `name`, and `email`. `password_hash` never
+leaves the backend. (`backend/main.py`, `public_user`.)
+
+### How passwords are protected
+
+Hashing lives in `backend/auth.py`. The scheme is **PBKDF2-HMAC-SHA256**, stored
+in the format the seed database already used:
+
+```
+pbkdf2_sha256$<16-byte random salt>$<32-byte digest>
+```
+
+Four properties, and the attack each one defeats (human or AI alike):
+
+1. **One-way hash, not encryption.** The stored value cannot be reversed to the
+   password. An attacker with full read access to `campus_customs.db` cannot
+   read passwords out; they can only guess candidates and hash each guess.
+2. **Per-user random salt** (16 bytes, unique per account). Two users with the
+   same password get different hashes, so one precomputed lookup table
+   ("rainbow table") cannot crack the whole table at once, and equal passwords
+   are not visible as equal hashes.
+3. **120,000 iterations.** Each guess is deliberately expensive, which is what
+   blunts large-scale brute forcing. This count was not chosen arbitrarily: it
+   was calibrated to reproduce the seed user's hash, so existing seeded accounts
+   verify with the exact same code path as newly created ones.
+4. **Constant-time comparison** (`hmac.compare_digest`). Verification does not
+   short-circuit on the first wrong byte, so response timing does not leak how
+   much of a digest matched.
+
+Two more defenses at the endpoint level:
+
+- **No account enumeration.** A wrong password and an unknown email both return
+  the same 401 "Incorrect email or password", and the login path runs a hash
+  even when the email is unknown, so timing does not reveal which emails have
+  accounts.
+- **Server-side validation.** Email format, 8-character minimum, and the
+  password/confirm match are all re-checked on the server, not just in the
+  browser.
+
+### Sessions
+
+On successful login or signup the API returns a **signed session token**
+(`auth.make_token`): `"<user_id>:<expiry>:<HMAC-SHA256 signature>"`, signed with
+a server secret the client never sees. This is stateless, so no sessions table
+is needed. A tampered or expired token fails the signature or expiry check and
+is rejected with 401. The signing secret is read from `CAMPUS_CUSTOMS_SECRET`
+or generated once into `backend/.session_secret`, which is gitignored.
+
+The browser keeps the token in `localStorage` and sends it as
+`Authorization: Bearer <token>`. `GET /api/auth/me` resolves it back to the
+current user, so a page refresh keeps the session.
+
+> Scope note: `localStorage` + bearer token is appropriate for this homework.
+> A production build handling real credentials would prefer an httpOnly,
+> `Secure`, `SameSite` cookie (not readable by JavaScript, so a cross-site
+> script cannot steal the token) and would serve only over HTTPS.
+
+### Endpoints
+
+| Endpoint | Body | Returns |
+|---|---|---|
+| `POST /api/auth/signup` | first_name, last_name, email, password, confirm_password | `{token, user}` |
+| `POST /api/auth/login` | email, password | `{token, user}` |
+| `GET /api/auth/me` | — (Bearer token) | `{user}` |
+
+### Verified end to end
+
+Tested through the Vite proxy, exactly as the browser sees it:
+
+- The seed user **test@campuscustoms.yale.edu / password** logs in successfully.
+- A brand-new account can be created, then logged into, then resolved via
+  `/api/auth/me`.
+- Inspected the stored row for a new account: the password column holds a
+  `pbkdf2_sha256$...` hash, the plaintext does not appear in it, and the salt
+  differs from the seed user's.
+- Rejected cases all behave: wrong password (401), unknown email (401, same
+  message), duplicate email (409), mismatched confirm (400), short password
+  (400), tampered token (401).
+- Test accounts created during verification were deleted; the database is back
+  to its three seed users.

@@ -152,6 +152,39 @@ recording because the prompts that moved the design forward were short reactions
 
 ---
 
+## Problem 4 — Create Account and Login
+
+**Initial prompt**
+
+> this is now Problem 4: Create account and login
+> build a create-account/login flow
+> for create account, it should be first name, last name, email, password (and
+> confirm password pls)
+> log in it's email and password
+> new accounts go into the users table, and let's make sure that it can store
+> passwords securely so hackers (either human or AI) cannot access them
+> the seed database already has a test user that we can use while building
+> (test@campuscustoms.yale.edu;password). let's confirm we can log in as that
+> user, and that a brand-new account we create also works
+> let's update output/harness.md with how auth words (what we store for a user
+> and how passwords are protected)
+
+**Follow-up prompt**
+
+> (none needed — the initial prompt specified the fields, the storage
+> requirement, the exact test credential to verify against, and the harness
+> update, so there was enough to build and verify the whole flow in one pass.)
+
+**What was lacking after the first prompt**
+
+Nothing substantive was missing from the instructions. The only unknown that had
+to be discovered rather than specified was the seed hash's parameters: the stored
+format omits the iteration count, so the exact PBKDF2 settings had to be
+recovered by reproducing the provided test credential before existing users
+could be verified with the same code that creates new ones.
+
+---
+
 <!-- Template for the next problem — copy, fill in, delete this comment.
 
 ## Problem N — [Title]
