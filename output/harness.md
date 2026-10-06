@@ -297,11 +297,49 @@ the script has been removed. It is recoverable from git history at commit
   garment, loose enough to take the antialiased edge. That version worked
   technically; it was rejected on aesthetics, not correctness.
 
-**Open question for later:** the catalogue mixes black-background and
-white-background photography, so the product grid will look uneven whatever
-frame we use. Options if it starts to bother us: a uniform dark image tile, a
-per-image background sampled from the photo's own corner, or sourcing
-replacement photography.
+### The fix we kept: per-image tile backgrounds
+
+Rather than forcing the photography to match, each card tile is painted with the
+background color sampled from **its own image**, so every photo blends into its
+frame regardless of how it was shot.
+
+`scripts/add_image_bg.py` adds an `image_bg` column to `catalogue`:
+
+- Samples an 8×8 patch at each of the four corners and averages it (via a
+  one-pixel BOX downsample, which is the mean without materialising the pixels).
+- Takes the **per-channel median across the four corners**. Median rather than
+  mean means a garment overlapping one corner cannot drag the result; two
+  corners would have to be covered to shift it, which does not occur here.
+- Stores a hex string. Additive, idempotent, and verified non-null for all 102.
+
+Results across the catalogue:
+
+| Color | Products |
+|---|---:|
+| `#000000` | 73 |
+| `#ffffff` | 25 |
+| `#f8f8f8` | 2 |
+| `#fafafa` | 1 |
+| `#c2c2c2` | 1 |
+
+The `#c2c2c2` case is **correct, not an error**: that product is a gray t-shirt
+photographed edge to edge, so the garment itself reaches the corners. Painting
+its tile gray makes the shirt bleed seamlessly into the frame, which is exactly
+the intent.
+
+The API returns `image_bg` on every product and falls back to `#ffffff` when the
+column is absent, so a database that has not had the script run still works. The
+frontend applies it inline on `.card-image` and `.detail-image`; the CSS value is
+only a fallback.
+
+### Why the whitening approach lost
+
+Worth recording the reasoning, since the whitened images were technically
+correct: forcing 73 photos to white made them consistent with the other 29 but
+left every garment looking cut out, with the flood fill's hard edge visible
+where a soft studio shadow used to be. Sampling preserves each photo as shot and
+solves the seam at the frame instead of in the image. Less processing, better
+result.
 
 ### Design direction: casual but sophisticated
 

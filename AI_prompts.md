@@ -105,6 +105,11 @@ Claude had everything it needed except the one input required to write the Home
 and About Us copy — it had to stop and ask for a tone before that part could be
 written.
 
+> OK, the white background also looks wack. Can we revert to the original pls?
+
+> Oooh, let's sample each photo's own corner color, and use it as that card's
+> background
+
 > This is the URL: https://github.com/czambrano98/ai-foundations-hw4
 > While you're wiring, let's also make some website edits:
 > For design, let's make it casual, but sophisticated
@@ -128,6 +133,22 @@ obvious on screen: em dashes throughout the copy, ragged final rows from CSS
 `auto-fit` grids, and product photos sitting on black. The last turned out not to
 be a styling problem at all — 73 of the 102 source JPGs have black baked into the
 pixels, so it needed an image-processing pass rather than a CSS change.
+
+**Note on the design iterations**
+
+I am particular about the design of the website, so Problem 3 took several
+rounds rather than one. The product images alone went through three states:
+original black backgrounds, then flood-filled to white (which I rejected), then
+reverted to the originals with each card tile painted the color sampled from its
+own photo. That last version is the one I wanted, and it was not something
+either of us specified up front — it came out of looking at the result and
+reacting to it.
+
+The general pattern across this problem: the first output was structurally
+correct but visually generic, and getting to something I actually liked took
+me describing what looked wrong in plain terms and iterating on it. Worth
+recording because the prompts that moved the design forward were short reactions
+("the white background also looks wack") rather than detailed specifications.
 
 ---
 

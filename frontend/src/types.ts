@@ -9,6 +9,8 @@ export interface Product {
   search_tags: string[]
   price: number
   image_url: string
+  /** Hex color sampled from the photo's own corners, used as its tile background. */
+  image_bg: string
   total_stock: number
   in_stock: boolean
 }

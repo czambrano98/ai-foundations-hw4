@@ -74,6 +74,12 @@ def row_to_product(row: sqlite3.Row) -> dict:
         # The DB stores 'products/<slug>.jpg'; the API serves that directory at
         # /images, so strip the prefix and hand the client a usable URL.
         "image_url": f"/images/{Path(row['image_file_path']).name}",
+        # The photo's own background color, sampled by scripts/add_image_bg.py.
+        # The frontend paints each card tile with it so the image blends into
+        # its frame; the catalogue mixes black and white backgrounds. Falls back
+        # to white when the column is absent, so the API still works on a
+        # database where that script has not been run.
+        "image_bg": (row["image_bg"] if "image_bg" in row.keys() else None) or "#ffffff",
     }
 
 

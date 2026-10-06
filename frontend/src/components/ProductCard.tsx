@@ -5,7 +5,10 @@ import { formatPrice } from '../api'
 export default function ProductCard({ product }: { product: Product }) {
   return (
     <Link to={`/products/${product.product_id}`} className="card">
-      <div className="card-image">
+      {/* Paint the tile with the photo's own background so the image blends
+          into its frame. The catalogue mixes black and white backgrounds, so a
+          single frame color would leave a hard seam on one group or the other. */}
+      <div className="card-image" style={{ background: product.image_bg }}>
         <img src={product.image_url} alt={product.name} loading="lazy" />
       </div>
       <div className="card-body">

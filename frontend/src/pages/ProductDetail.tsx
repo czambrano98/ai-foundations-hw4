@@ -60,7 +60,7 @@ export default function ProductDetail() {
         </div>
 
         <div className="detail">
-          <div className="detail-image">
+          <div className="detail-image" style={{ background: product.image_bg }}>
             <img src={product.image_url} alt={product.name} />
           </div>
 

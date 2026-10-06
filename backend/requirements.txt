@@ -1,2 +1,5 @@
 fastapi>=0.142
 uvicorn[standard]>=0.34
+
+# Used by scripts/add_image_bg.py to sample each product photo's background.
+pillow>=11.0

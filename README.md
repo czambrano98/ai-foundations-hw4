@@ -17,6 +17,13 @@ Add the derived `category` column (see `output/harness.md`, Problem 2a):
 .venv/Scripts/python scripts/add_category.py
 ```
 
+Sample each product photo's own background color into an `image_bg` column, so
+the storefront can paint every card tile to match its image:
+
+```bash
+.venv/Scripts/python scripts/add_image_bg.py
+```
+
 
 Install dependencies:
 
@@ -68,6 +75,7 @@ Interactive docs at http://localhost:8000/docs while the backend runs.
 ```
 backend/main.py          FastAPI app
 scripts/add_category.py  Problem 2a category normalization
+scripts/add_image_bg.py  Per-photo background color sampling
 frontend/src/
   api.ts                 fetch helpers, price/label formatting
   types.ts               shared TypeScript interfaces

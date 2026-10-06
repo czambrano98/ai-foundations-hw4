@@ -290,9 +290,10 @@ a:hover { color: var(--brass); }
   border-color: var(--navy-soft);
 }
 
-/* Product photos sit on white. The source JPGs were composited on black;
-   scripts/whiten_product_images.py converts them, and this keeps the frame
-   consistent for the handful that ship on cream. */
+/* The background here is a fallback only. Each tile is painted inline with the
+   colour sampled from its own photo (catalogue.image_bg), because the supplied
+   photography mixes black and white backgrounds and any single frame colour
+   leaves a hard seam around one group. */
 .card-image {
   aspect-ratio: 1 / 1;
   background: #fff;
