@@ -17,6 +17,14 @@ Add the derived `category` column (see `output/harness.md`, Problem 2a):
 .venv/Scripts/python scripts/add_category.py
 ```
 
+Convert the black product-photo backgrounds to white. 73 of the 102 supplied
+JPGs were composited on black; this writes white-background copies to
+`data/products_web/`, which the backend prefers when present:
+
+```bash
+.venv/Scripts/python scripts/whiten_product_images.py
+```
+
 Install dependencies:
 
 ```bash
@@ -65,8 +73,9 @@ Interactive docs at http://localhost:8000/docs while the backend runs.
 ## Layout
 
 ```
-backend/main.py          FastAPI app
-scripts/add_category.py  Problem 2a category normalization
+backend/main.py                  FastAPI app
+scripts/add_category.py          Problem 2a category normalization
+scripts/whiten_product_images.py Black to white product-photo backgrounds
 frontend/src/
   api.ts                 fetch helpers, price/label formatting
   types.ts               shared TypeScript interfaces

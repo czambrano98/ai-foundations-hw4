@@ -105,11 +105,29 @@ Claude had everything it needed except the one input required to write the Home
 and About Us copy — it had to stop and ask for a tone before that part could be
 written.
 
+> This is the URL: https://github.com/czambrano98/ai-foundations-hw4
+> While you're wiring, let's also make some website edits:
+> For design, let's make it casual, but sophisticated
+> Let's remove AI-recognizable copy (like the em dashes)
+> For the cards on "Find your corner of campus," let's make sure they're
+> symmetrical and occupy the same space across the rows
+> For the pictures on "Picked for this week," let's put the pictures on a white
+> background bc the black looks unprofessional, and let's also make sure that it
+> only displays one row for symmetry
+
 **Note on the second follow-up**
 
 "Draft mode" was ambiguous between *private repo* and *nothing pushed at all*, and
 the two differ in whether code leaves the machine — so Claude set up the local
 repository and committed, then asked before doing anything outward-facing.
+
+**Note on the third follow-up**
+
+The first build looked AI-generated in three specific ways that only became
+obvious on screen: em dashes throughout the copy, ragged final rows from CSS
+`auto-fit` grids, and product photos sitting on black. The last turned out not to
+be a styling problem at all — 73 of the 102 source JPGs have black baked into the
+pixels, so it needed an image-processing pass rather than a CSS change.
 
 ---
 

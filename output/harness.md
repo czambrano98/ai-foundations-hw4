@@ -265,6 +265,80 @@ the database from scratch. Note it contains the three seeded user rows with
 PBKDF2 password hashes — fixture data from the assignment, not real credentials,
 but worth remembering before making the repo public.
 
+---
+
+## Problem 3a — Design Pass and Image Repair
+
+### The product photos had black backgrounds
+
+**73 of the 102 supplied JPGs are composited on pure black.** On a light
+storefront this reads as heavy and unprofessional, and no amount of CSS fixes it
+because the black is baked into the pixels.
+
+`scripts/whiten_product_images.py` flood-fills the background inward from the
+image border and writes white-background copies to `data/products_web/`. The
+backend prefers that directory and falls back to `data/products/`, so deleting
+the output folder reverts the change. Originals are never modified.
+
+**The threshold matters more than it looks.** A first attempt using a tolerance
+of 60 destroyed the garments: the fill leaked through the shadowed folds of a
+navy hoodie and dissolved the whole product into white. Measuring the actual
+pixels explained why.
+
+| Region | RGB |
+|---|---|
+| Background | exactly `(0, 0, 0)` |
+| Navy garment, darkest folds | sum of roughly 40 to 180 across channels |
+
+So the fill only accepts pixels whose channels sum to **6 or less**. That is
+tight enough to never reach the garment and loose enough to take the
+antialiased edge. Verified visually on a navy hoodie (the hardest case, being
+closest in value to the background) and by scanning every output for images that
+came back more than 92% white. Five flagged, all false positives: cream and
+white garments that are legitimately pale.
+
+### Design direction: casual but sophisticated
+
+Moved away from the first pass, which was heavy and institutional (navy slabs,
+Georgia serif, hard shadows).
+
+| | Before | After |
+|---|---|---|
+| Hero | Full-bleed navy gradient block | Warm cream, navy serif headline |
+| Palette | `#00356b` navy, `#bd9b60` gold | Softer `#1b3a5f` navy, `#b08d57` brass, cream and sand neutrals |
+| Nav | Solid navy bar, white links | Translucent white, blurred, hairline border |
+| Type | Georgia, weight 700 | Iowan Old Style / Palatino, weight 400 to 500, tighter tracking |
+| Corners | 6px | 10px, 16px on larger surfaces |
+| Chat launcher | Circular emoji button | Pill reading "Ask us anything" |
+
+Navy is now an accent rather than the ground. The effect is quieter and more
+expensive-looking while staying unmistakably Yale.
+
+### Layout symmetry
+
+Both home-page grids previously used `auto-fit`/`auto-fill`, which left ragged
+final rows.
+
+- **"Find your corner of campus"** now uses a fixed 4-column grid. There are 7
+  categories, which would leave a gap, so the page adds an eighth **"Shop all"**
+  tile. 8 tiles fill 2 complete rows. Tiles are flex columns with a 132px
+  minimum height, so every one occupies identical space regardless of label
+  length. Collapses to 2 columns under 900px, still even.
+- **"Picked for this week"** is pinned to `repeat(4, 1fr)` and the section only
+  renders when exactly 4 in-stock products are available, so it can never show a
+  partial row. Falls back to 2 columns under 980px and 1 under 540px, both
+  symmetric.
+
+### Copy: removing AI tells
+
+Em dashes were stripped from every user-facing string across the frontend,
+`index.html` metadata, and the backend chat stub. Replaced with commas, periods,
+or parentheses depending on what the sentence needed. Verified by grep: zero
+remaining in `frontend/src`, `frontend/index.html` and `backend/main.py`.
+
+The internal documents (this harness, `README.md`, `AI_prompts.md`) still use
+them, on the grounds that they are working notes rather than site copy.
+
 ### Carried into Problem 5
 
 - The chat stub needs replacing with a real agent; the response contract is

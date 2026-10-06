@@ -18,7 +18,12 @@ from pydantic import BaseModel
 
 ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "data" / "campus_customs.db"
-IMAGES_DIR = ROOT / "data" / "products"
+
+# Most of the supplied photos are composited on black. scripts/whiten_product_images.py
+# writes white-background copies to products_web/; prefer those when present and
+# fall back to the originals so the API still works on a fresh unzip.
+_WEB_IMAGES = ROOT / "data" / "products_web"
+IMAGES_DIR = _WEB_IMAGES if _WEB_IMAGES.exists() else ROOT / "data" / "products"
 
 # Sizes sort alphabetically in SQL, which puts XL before XS and S before XS.
 # This is the order a shopper expects to see them in.
@@ -186,8 +191,8 @@ def chat(request: ChatRequest):
     """
     return {
         "reply": (
-            "Thanks for asking! I'm not connected to the shop assistant yet — "
-            "that comes in Problem 5. In the meantime you can browse the full "
+            "Thanks for asking! I'm not connected to the shop assistant yet. "
+            "That comes in Problem 5. In the meantime you can browse the full "
             "catalogue on the Products page."
         ),
         "products": [],

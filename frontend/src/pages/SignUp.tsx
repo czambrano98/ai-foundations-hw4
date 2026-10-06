@@ -22,7 +22,7 @@ export default function SignUp() {
           <h1 style={{ fontSize: '1.9rem' }}>Create account</h1>
 
           <div className="form-note">
-            Sign-up isn't wired up yet — the <code>users</code> table is ready, but
+            Sign-up isn't wired up yet. The <code>users</code> table is ready, but
             registration arrives in a later problem.
           </div>
 

@@ -13,8 +13,8 @@ export default function Login() {
           <h1 style={{ fontSize: '1.9rem' }}>Log in</h1>
 
           <div className="form-note">
-            Accounts aren't wired up yet — authentication arrives in a later problem.
-            This form is the shape of what's coming.
+            Accounts aren't wired up yet. Authentication arrives in a later
+            problem, and this form is the shape of what's coming.
           </div>
 
           <form

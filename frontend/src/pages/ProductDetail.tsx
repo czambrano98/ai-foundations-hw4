@@ -73,7 +73,7 @@ export default function ProductDetail() {
 
             <div className="spec">
               <div className="spec-label">
-                Sizes {product.in_stock ? '' : '— currently sold out'}
+                Sizes {product.in_stock ? '' : '(currently sold out)'}
               </div>
               <div className="size-grid">
                 {product.inventory.map((size) => (
@@ -116,7 +116,7 @@ export default function ProductDetail() {
               onClick={() =>
                 alert(
                   selectedSize
-                    ? `Cart isn't built yet — but you picked ${product.name} in ${selectedSize}.`
+                    ? `Cart isn't built yet, but you picked ${product.name} in ${selectedSize}.`
                     : 'Pick a size first.',
                 )
               }

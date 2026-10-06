@@ -7,7 +7,7 @@ const GREETING: ChatMessage = {
   role: 'assistant',
   content:
     "Hi! I'm the Campus Customs shop assistant. Ask me about sizes, colors, " +
-    'or what to get someone — and I\'ll point you to the right gear.',
+    'or what to get someone, and I\'ll point you to the right gear.',
 }
 
 export default function ChatPanel() {
@@ -43,7 +43,7 @@ export default function ChatPanel() {
         {
           role: 'assistant',
           content:
-            "Sorry — I couldn't reach the shop assistant. Make sure the backend " +
+            "Sorry, I couldn't reach the shop assistant. Make sure the backend " +
             'is running on port 8000 and try again.',
         },
       ])
@@ -58,9 +58,8 @@ export default function ChatPanel() {
         className="chat-launcher"
         onClick={() => setOpen(true)}
         aria-label="Open shop assistant chat"
-        title="Chat with us"
       >
-        &#128172;
+        Ask us anything
       </button>
     )
   }
@@ -89,7 +88,7 @@ export default function ChatPanel() {
                     to={`/products/${product.product_id}`}
                     style={{ fontSize: '0.85rem', fontWeight: 600 }}
                   >
-                    {product.name} — {formatPrice(product.price)}
+                    {product.name}, {formatPrice(product.price)}
                   </Link>
                 ))}
               </div>
