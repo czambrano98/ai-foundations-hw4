@@ -70,7 +70,9 @@ def _page_instructions(ctx: RunContext[ChatDeps]) -> str:
             f"{deps.current_product_name} (product_id: "
             f"{deps.current_product_id}). If they say 'this', 'it', 'this one', "
             f"or ask about a color or size without naming a product, they mean "
-            f"this product. Use this product_id with your tools."
+            f"this product. Use this product_id with your tools. Name the product "
+            f"({deps.current_product_name}) at least once in your reply, so the "
+            f"conversation stays clear if they ask a follow-up later."
         )
     return ""
 
