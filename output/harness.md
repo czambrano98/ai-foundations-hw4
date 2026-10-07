@@ -895,3 +895,26 @@ rationale is in `output/design.md`. Technical summary:
 
 Palette unchanged (the Yale navy/neutrals matched earlier). Build passes; bundle
 is ~125 KB gzipped (react-markdown from Problem 9 is the bulk).
+
+---
+
+## Problem 11 — Site Testing (App Check)
+
+`output/app_check.html` (double-click to open) documents three live-site checks,
+each with a heading, a screenshot, and a one/two-sentence caption on what it
+proves. Screenshots live in `output/app_check_images/` and are linked with
+relative paths.
+
+Screenshots were captured from the **running app** (not mocked) by driving it
+with Playwright headless Chromium (`scripts`-style one-off in the scratchpad):
+
+1. **inventory.png** — chat answers "5 in size M, $58.00" for the Baseball Left
+   Chest Crewneck, matching the DB exactly (honest stock + price).
+2. **search_cards.png** — "what hoodies do you have?" fills the Products page with
+   the six matching hoodie cards under a "From the shop assistant" band.
+3. **usability_filters.png** — the Problem 9 shopping filters: "In stock only"
+   checked and "Price: Low to High" selected, grid sorted cheapest first.
+
+Capturing real screenshots also served as an end-to-end smoke test: the chat,
+the chat-to-page search, and the filters all work in a real browser, confirming
+the manual checks from the pre-Problem-9 verification still hold in the UI.

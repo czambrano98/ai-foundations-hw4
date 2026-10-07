@@ -388,6 +388,36 @@ prefers-reduced-motion) rather than decorative for its own sake.
 
 ---
 
+## Problem 11 — Site Testing (App Check)
+
+**Initial prompt**
+
+> now, we're on Problem 11: Site testing (app check)
+> let's test the live site and document in output/app_check.html (which we can
+> double-click open). we'll need to include clear screenshots and short captions
+> for: 1. chat checking the inventory level of an item (honest stock/price from
+> the DB) 2. the dynamic search-results cards appearing after a category question
+> 3. one of the usability features that we added in Problem 9
+> we'll need to make the HTML easy to grade: heading for each check, screenshot,
+> one or two sentences on what the screenshot proves. the screesnshot images
+> should go in output/app_check_images and we should link them from app_check/html
+> with relative paths (like, app_check_images/inventory.png)
+
+**Follow-up prompt**
+
+> (none needed — the three checks, the HTML structure, the images folder, and the
+> relative-path linking were all specified.)
+
+**What was lacking after the first prompt**
+
+The instructions were complete; the only real work beyond them was producing
+genuine screenshots of the running site (no browser is available to Claude
+directly), which was solved by installing Playwright and driving headless
+Chromium against the live localhost app, so the captured stock number (5 in M at
+$58) and the dynamic cards are real, not mocked.
+
+---
+
 <!-- Template for the next problem — copy, fill in, delete this comment.
 
 ## Problem N — [Title]

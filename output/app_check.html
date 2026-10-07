@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Campus Customs — App Check (Problem 11)</title>
+    <style>
+      :root {
+        --navy: #00366b;
+        --ink: #1d1d1d;
+        --slate: #4d4d4d;
+        --line: #dddddd;
+        --cream: #f4f4f4;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--ink);
+        line-height: 1.6;
+        background: #fff;
+      }
+      header {
+        background: var(--navy);
+        color: #fff;
+        padding: 28px 24px;
+      }
+      .wrap { max-width: 940px; margin: 0 auto; padding: 0 24px; }
+      header .wrap { padding: 0; }
+      h1 { margin: 0 0 4px; font-size: 1.7rem; }
+      header p { margin: 0; color: #c9d8e8; font-size: 0.95rem; }
+      main { padding: 40px 0 72px; }
+      .check {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 40px;
+        background: #fff;
+      }
+      .check h2 {
+        margin: 0;
+        padding: 18px 22px;
+        font-size: 1.2rem;
+        background: var(--cream);
+        border-bottom: 1px solid var(--line);
+        color: var(--navy);
+      }
+      .check .num {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px; height: 26px;
+        border-radius: 50%;
+        background: var(--navy);
+        color: #fff;
+        font-size: 0.85rem;
+        margin-right: 10px;
+        vertical-align: middle;
+      }
+      .shot { padding: 22px; }
+      .shot img {
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        display: block;
+      }
+      .shot.narrow img { max-width: 420px; margin: 0 auto; }
+      .caption {
+        padding: 0 22px 24px;
+        color: var(--slate);
+        font-size: 0.98rem;
+      }
+      .caption strong { color: var(--ink); }
+      footer { color: var(--slate); font-size: 0.85rem; text-align: center; padding: 24px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <h1>Campus Customs — App Check</h1>
+        <p>Problem 11 · live-site verification with screenshots from the running app</p>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="check">
+        <h2><span class="num">1</span>Chat checks real inventory and price</h2>
+        <div class="shot narrow">
+          <img src="app_check_images/inventory.png"
+               alt="Chat reply stating 5 of the Baseball Left Chest Crewneck are in stock in size M at $58.00" />
+        </div>
+        <p class="caption">
+          Asked how many of the Baseball Left Chest Crewneck are in stock in size M
+          and the price, the assistant answers <strong>"5 in size M, $58.00."</strong>
+          Both numbers come straight from the database (that product's M quantity is
+          5 and its price is $58), proving the agent reports honest stock and price
+          rather than inventing them.
+        </p>
+      </section>
+
+      <section class="check">
+        <h2><span class="num">2</span>A category question fills the page with product cards</h2>
+        <div class="shot">
+          <img src="app_check_images/search_cards.png"
+               alt="Products page showing a 'From the shop assistant' section with six hoodie cards after asking what hoodies are available" />
+        </div>
+        <p class="caption">
+          Typing <strong>"what hoodies do you have?"</strong> in the chat sends the
+          shopper to the Products page, where a <strong>"From the shop assistant"</strong>
+          band shows the 6 matching hoodies as real cards (image, name, price, stock).
+          This proves the agent's structured matches are rendered dynamically on the
+          site, not just described in text.
+        </p>
+      </section>
+
+      <section class="check">
+        <h2><span class="num">3</span>Usability feature: shopping filters (Problem 9)</h2>
+        <div class="shot">
+          <img src="app_check_images/usability_filters.png"
+               alt="Products page with 'In stock only' checked and 'Price: Low to High' selected, grid sorted cheapest first" />
+        </div>
+        <p class="caption">
+          On the Products page, <strong>"In stock only"</strong> is checked and the
+          sort is set to <strong>"Price: Low to High"</strong>, so the grid leads
+          with the least expensive in-stock items. This proves the Problem 9
+          shopping filters work, letting budget shoppers narrow to what they can
+          actually buy.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      Screenshots captured from the live app (frontend on :5173, API on :8000).
+    </footer>
+  </body>
+</html>
