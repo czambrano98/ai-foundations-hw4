@@ -21,9 +21,17 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import openai
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    TextPart,
+    UserPromptPart,
+)
 
 import agent
 import auth
+from agent import ChatDeps
 from models import ChatResponse, ProductCard
 
 # A safe fallback when the model provider's content filter blocks a message
@@ -240,6 +248,21 @@ def current_user(authorization: str | None = Header(default=None)):
     return row
 
 
+def optional_user(authorization: str | None = Header(default=None)):
+    """Like current_user but returns None instead of raising.
+
+    Chat is open to guests, so the token is optional: a valid one identifies the
+    customer, anything else (missing, bad, expired) is treated as a guest.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    user_id = auth.read_token(authorization.removeprefix("Bearer ").strip())
+    if user_id is None:
+        return None
+    with connect() as con:
+        return con.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+
+
 @app.post("/api/auth/signup")
 def signup(request: SignupRequest):
     first = request.first_name.strip()
@@ -310,7 +333,12 @@ def me(user: sqlite3.Row = Depends(current_user)):
 
 class ChatRequest(BaseModel):
     message: str
-    user_id: int | None = None
+    # product_id of the page the shopper is on, if any (Problem 8 page context).
+    product_id: str | None = None
+
+
+# Keep at most this many past messages as agent memory, to bound the prompt.
+HISTORY_LIMIT = 20
 
 
 def product_card(con: sqlite3.Connection, product_id: str) -> ProductCard | None:
@@ -341,20 +369,81 @@ def product_card(con: sqlite3.Connection, product_id: str) -> ProductCard | None
     )
 
 
+def load_history_rows(con: sqlite3.Connection, user_id: int) -> list[sqlite3.Row]:
+    """A user's stored chat turns, oldest first, capped to the last HISTORY_LIMIT."""
+    rows = con.execute(
+        "SELECT role, content, products_json FROM chat_messages "
+        "WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+        (user_id, HISTORY_LIMIT),
+    ).fetchall()
+    return list(reversed(rows))
+
+
+def rows_to_message_history(rows: list[sqlite3.Row]) -> list[ModelMessage]:
+    """Turn stored turns into PydanticAI messages, so the agent has memory."""
+    history: list[ModelMessage] = []
+    for row in rows:
+        if row["role"] == "user":
+            history.append(ModelRequest(parts=[UserPromptPart(content=row["content"])]))
+        else:
+            history.append(ModelResponse(parts=[TextPart(content=row["content"])]))
+    return history
+
+
+def save_turn(
+    con: sqlite3.Connection,
+    user_id: int,
+    role: str,
+    content: str,
+    products: list[ProductCard] | None = None,
+) -> None:
+    products_json = (
+        json.dumps([p.model_dump() for p in products]) if products else None
+    )
+    con.execute(
+        "INSERT INTO chat_messages (user_id, role, content, products_json) "
+        "VALUES (?, ?, ?, ?)",
+        (user_id, role, content, products_json),
+    )
+
+
 @app.post("/api/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, user: sqlite3.Row | None = Depends(optional_user)):
     """Send a shopper message to the agent and return its reply plus cards.
 
     The agent returns a message and a list of product ids. We hydrate those ids
     into full cards here, dropping any id that does not resolve, so the response
     the frontend renders is always backed by real catalogue rows.
+
+    For a signed-in shopper, the turn is saved to chat_messages and prior turns
+    are replayed as memory. Guests chat statelessly. If the shopper is on a
+    product page, that product is passed as context so "this"/"it" resolves.
     """
     message = request.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="Message must not be empty")
 
+    # Build the agent context: who is chatting, and what they are looking at.
+    deps = ChatDeps()
+    if user is not None:
+        deps.customer_name = user["name"]
+        deps.customer_email = user["email"]
+
+    history: list[ModelMessage] = []
+    with connect() as con:
+        if request.product_id:
+            row = con.execute(
+                "SELECT product_id, name FROM catalogue WHERE product_id = ?",
+                (request.product_id,),
+            ).fetchone()
+            if row is not None:
+                deps.current_product_id = row["product_id"]
+                deps.current_product_name = row["name"]
+        if user is not None:
+            history = rows_to_message_history(load_history_rows(con, user["id"]))
+
     try:
-        reply = await agent.run_chat(message)
+        reply = await agent.run_chat(message, deps=deps, message_history=history)
     except openai.BadRequestError as exc:
         # The provider's content filter rejected the input (e.g. a jailbreak
         # attempt). Deflect safely rather than erroring.
@@ -372,4 +461,31 @@ async def chat(request: ChatRequest):
                 if card is not None:
                     cards.append(card)
 
+    # Persist the exchange for signed-in shoppers only.
+    if user is not None:
+        with connect() as con:
+            save_turn(con, user["id"], "user", message)
+            save_turn(con, user["id"], "assistant", reply.message, cards)
+            con.commit()
+
     return ChatResponse(reply=reply.message, products=cards)
+
+
+@app.get("/api/chat/history")
+def chat_history(user: sqlite3.Row = Depends(current_user)):
+    """A signed-in shopper's saved chat, for the widget to reload on return."""
+    with connect() as con:
+        rows = con.execute(
+            "SELECT role, content, products_json FROM chat_messages "
+            "WHERE user_id = ? ORDER BY id ASC",
+            (user["id"],),
+        ).fetchall()
+    messages = [
+        {
+            "role": row["role"],
+            "content": row["content"],
+            "products": json.loads(row["products_json"]) if row["products_json"] else [],
+        }
+        for row in rows
+    ]
+    return {"messages": messages}

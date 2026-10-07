@@ -297,6 +297,40 @@ narrow for real cards and the page already has the grid and card component.
 
 ---
 
+## Problem 8 — Customer Memory
+
+**Initial prompt**
+
+> We're all set! Now, we're on Problem 8: Customer memory
+> when a shopper is logged in, we should save their chat history in the database
+> in an appropriate table and reload it when they return. the chatbot should know
+> who is chatting (name and email), put that in agent deps (or an equivalent clear
+> pattern) and/or tools the agent can call.
+> also, we should pass enough page context so that if someone is in a product page
+> and asks something like, "do you have this in yellow?" the agent knows which
+> item they mean (this should be code into the agent context)
+> guests can still chat, but history only needs to exist for logged in users
+> we should document in output/harness.md, how user chat history is stored, what
+> customer fields the agent sees, and how page context is passed
+
+**Follow-up prompt**
+
+> (I pressed enter too soon and re-sent the full prompt; no other follow-up was
+> needed. The appropriate table already existed in the schema, the deps pattern
+> and page-context requirement were specified, and guest behavior was called out.)
+
+**What was lacking after the first prompt**
+
+Nothing was missing from the instructions, and the right table (`chat_messages`,
+with user_id, role, content, products_json, created_at) already existed in the
+seed schema, so no new table was needed. The judgment calls were implementation
+choices: using PydanticAI `instructions` rather than `system_prompt` for the
+customer and page context (so they stay fresh when past turns are replayed), and
+replaying stored turns as `message_history` for memory while exposing only name
+and email to the agent, never the password hash.
+
+---
+
 <!-- Template for the next problem — copy, fill in, delete this comment.
 
 ## Problem N — [Title]

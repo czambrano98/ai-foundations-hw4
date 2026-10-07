@@ -734,3 +734,95 @@ the chat still acknowledges the result.
 - The detail endpoint resolves a chat-returned id
   (`basic-hoodie-big-yale`), so clicking an injected card opens its detail view.
 - `npm run build` passes with the new context and page section.
+
+---
+
+## Problem 8 — Customer Memory
+
+Signed-in shoppers now have a chat the agent remembers across turns and across
+visits; the agent knows who it is talking to; and it knows what page the shopper
+is on. Guests can still chat, but nothing is stored for them.
+
+### How chat history is stored
+
+In the existing `chat_messages` table (from the seed schema), one row per turn:
+
+| Column | What we write |
+|---|---|
+| `user_id` | FK to the signed-in shopper (guests are never written) |
+| `role` | `user` or `assistant` |
+| `content` | the message text |
+| `products_json` | for assistant turns, a JSON snapshot of the product cards shown |
+| `created_at` | defaulted to `datetime('now')` |
+
+On each turn from a signed-in shopper, `/api/chat` saves the user message and the
+assistant reply (`save_turn`). Two ways that history is used:
+
+- **Reload on return.** `GET /api/chat/history` (auth required) returns the
+  shopper's saved messages. The widget calls it on sign-in and shows the past
+  conversation, so returning feels continuous.
+- **Agent memory.** Before each run, the last 20 stored messages are replayed to
+  the agent as `message_history` (converted to PydanticAI `ModelRequest` /
+  `ModelResponse`), so a follow-up like "what colors does it come in?" resolves
+  against the earlier turn.
+
+Guests: no rows written, no history replayed. Each guest message is independent.
+
+### What customer fields the agent sees
+
+The agent's dependencies are a `ChatDeps` dataclass (`agent.py`), built per
+request in `/api/chat`:
+
+| Field | Source | Shown to the agent as |
+|---|---|---|
+| `customer_name` | `users.name` of the token holder | "You are chatting with {name} ({email}), a signed-in customer." |
+| `customer_email` | `users.email` | (same instruction line) |
+| `current_product_id` | the page context (below) | page instruction |
+| `current_product_name` | catalogue lookup of that id | page instruction |
+
+The agent sees **only name and email** for the customer, injected through a
+dynamic `@agent.instructions` function. It never sees `password_hash` or any
+other account field, and the instruction explicitly tells it not to reveal
+account details beyond the shopper's own name and email, or mention other
+customers. For guests the instruction says they are browsing as a guest.
+
+Using `instructions` (not `system_prompt`) matters here: instructions are
+re-evaluated every run and are not stored in the replayed history, so the
+customer and page context are always fresh and correct even as past turns are
+replayed.
+
+### How page context is passed
+
+So that "do you have this in yellow?" works on a product page:
+
+```
+ProductDetail page open at /products/:id
+        |
+ChatPanel reads the id from the URL (useLocation)
+        |  POST /api/chat { message, product_id }
+        v
+/api/chat looks up the product name, sets ChatDeps.current_product_*
+        |
+@agent.instructions injects: "The shopper is currently viewing {name}
+        (product_id: ...). If they say 'this'/'it' or ask about a color or
+        size without naming a product, they mean this one."
+        v
+agent calls get_stock / get_product_description with that product_id
+```
+
+The product id is passed as structured context (a field on the request and on
+`ChatDeps`), not parsed out of the shopper's sentence, so "this" is resolved from
+where they actually are on the site.
+
+### Verified end to end
+
+- **Guest** chat works with no token and writes no rows.
+- **Page context:** signed in and on `basic-hoodie-big-yale`, "do you have this in
+  yellow?" replied "this hoodie is only available in navy blue and white, not
+  yellow" without being told the product name.
+- **Memory:** the follow-up "what colors does it come in then?" (sent with no
+  product_id) answered "navy blue and white", resolving "it" from the prior turn.
+- **Reload:** `GET /api/chat/history` for the seed test user returns their 6
+  saved messages, which the widget shows on sign-in.
+- Test account and its messages were deleted afterward; the seed data is intact
+  (22 messages: 6 for the test user, 16 for another seed user).

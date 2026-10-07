@@ -1,6 +1,7 @@
 import type {
   AuthResponse,
   CategoryCount,
+  ChatMessage,
   ChatReply,
   Product,
   ProductDetail,
@@ -98,16 +99,38 @@ export function fetchCategories(): Promise<CategoryCount[]> {
   return get<CategoryCount[]>('/api/categories')
 }
 
-export async function sendChatMessage(message: string): Promise<ChatReply> {
+export async function sendChatMessage(
+  message: string,
+  productId?: string | null,
+): Promise<ChatReply> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  // Send the token when signed in, so the backend can save/recall history and
+  // tell the agent who is chatting. Omitted for guests.
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
   const response = await fetch('/api/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message }),
+    headers,
+    // product_id is the page the shopper is on, for "do you have this in...".
+    body: JSON.stringify({ message, product_id: productId ?? null }),
   })
   if (!response.ok) {
     throw new Error(`${response.status} ${response.statusText}`)
   }
   return response.json() as Promise<ChatReply>
+}
+
+/** A signed-in shopper's saved chat, to reload when the widget opens. Empty for guests. */
+export async function fetchChatHistory(): Promise<ChatMessage[]> {
+  const token = getToken()
+  if (!token) return []
+  const response = await fetch('/api/chat/history', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!response.ok) return []
+  const data = await response.json()
+  return (data.messages ?? []) as ChatMessage[]
 }
 
 export function formatPrice(price: number): string {

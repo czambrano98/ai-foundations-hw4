@@ -12,11 +12,13 @@ serve products and auth even if the agent is misconfigured.
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
 from openai import AsyncOpenAI
-from pydantic_ai import Agent
+from pydantic_ai import Agent, RunContext
+from pydantic_ai.messages import ModelMessage
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
@@ -28,6 +30,48 @@ from tools import (
     list_categories,
     search_catalogue,
 )
+
+
+@dataclass
+class ChatDeps:
+    """Per-request context the agent sees (Problem 8).
+
+    Carries who is chatting and what they are looking at. Guests leave the
+    customer fields None. `current_product_*` is set when the shopper is on a
+    product page, so "do you have this in yellow?" resolves to that product.
+    """
+
+    customer_name: str | None = None
+    customer_email: str | None = None
+    current_product_id: str | None = None
+    current_product_name: str | None = None
+
+
+def _customer_instructions(ctx: RunContext[ChatDeps]) -> str:
+    """Tell the agent who it is talking to."""
+    deps = ctx.deps
+    if deps.customer_name:
+        return (
+            f"You are chatting with {deps.customer_name} "
+            f"({deps.customer_email}), a signed-in customer. You may greet them "
+            f"by their first name. Never reveal account details beyond their own "
+            f"name and email, and never mention other customers."
+        )
+    return "The shopper is browsing as a guest and is not signed in."
+
+
+def _page_instructions(ctx: RunContext[ChatDeps]) -> str:
+    """Tell the agent what the shopper is currently looking at."""
+    deps = ctx.deps
+    if deps.current_product_id:
+        return (
+            f"The shopper is currently viewing this product: "
+            f"{deps.current_product_name} (product_id: "
+            f"{deps.current_product_id}). If they say 'this', 'it', 'this one', "
+            f"or ask about a color or size without naming a product, they mean "
+            f"this product. Use this product_id with your tools."
+        )
+    return ""
 
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent  # Homework 4/
@@ -93,10 +137,14 @@ def get_agent() -> Agent[None, AgentReply]:
     )
     model = OpenAIChatModel(MODEL_NAME, provider=OpenAIProvider(openai_client=client))
 
-    return Agent(
+    agent = Agent(
         model,
+        deps_type=ChatDeps,
         output_type=AgentReply,
-        system_prompt=load_prompt(),
+        # `instructions` (not `system_prompt`) so the base prompt and the
+        # deps-based context below are re-applied fresh on every run, including
+        # runs that replay prior history. They are not stored in the history.
+        instructions=load_prompt(),
         tools=[
             search_catalogue,
             get_product_description,
@@ -108,10 +156,26 @@ def get_agent() -> Agent[None, AgentReply]:
         # mistyped field name) is corrected rather than surfaced as an error.
         retries=2,
     )
+    # Dynamic instructions that read per-request deps (customer, current page).
+    agent.instructions(_customer_instructions)
+    agent.instructions(_page_instructions)
+    return agent
 
 
-async def run_chat(message: str) -> AgentReply:
-    """Run one shopper message through the agent and return its structured reply."""
+async def run_chat(
+    message: str,
+    deps: ChatDeps | None = None,
+    message_history: list[ModelMessage] | None = None,
+) -> AgentReply:
+    """Run one shopper message through the agent and return its structured reply.
+
+    `deps` carries who is chatting and the current page; `message_history` is the
+    shopper's earlier turns, so the agent has conversational memory.
+    """
     agent = get_agent()
-    result = await agent.run(message)
+    result = await agent.run(
+        message,
+        deps=deps or ChatDeps(),
+        message_history=message_history,
+    )
     return result.output

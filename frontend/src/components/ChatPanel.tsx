@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { sendChatMessage } from '../api'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { fetchChatHistory, sendChatMessage } from '../api'
+import { useAuth } from '../auth'
 import { useChatResults } from '../chatResults'
 import type { ChatMessage } from '../types'
 
@@ -11,6 +12,12 @@ const GREETING: ChatMessage = {
     'or what to get someone, and I\'ll point you to the right gear.',
 }
 
+/** Pull the product id out of the path when on a product detail page. */
+function currentProductId(pathname: string): string | null {
+  const match = pathname.match(/^\/products\/(.+)$/)
+  return match ? match[1] : null
+}
+
 export default function ChatPanel() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING])
@@ -18,7 +25,21 @@ export default function ChatPanel() {
   const [sending, setSending] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  const location = useLocation()
+  const { user } = useAuth()
   const chatResults = useChatResults()
+
+  // Reload saved history when a shopper signs in; reset to the greeting on
+  // sign-out. Keyed on the user id so it runs on login/logout, not every render.
+  useEffect(() => {
+    if (!user) {
+      setMessages([GREETING])
+      return
+    }
+    fetchChatHistory().then((history) => {
+      setMessages(history.length ? [GREETING, ...history] : [GREETING])
+    })
+  }, [user?.id])
 
   // Keep the newest message in view as the conversation grows.
   useEffect(() => {
@@ -35,7 +56,7 @@ export default function ChatPanel() {
     setSending(true)
 
     try {
-      const reply = await sendChatMessage(text)
+      const reply = await sendChatMessage(text, currentProductId(location.pathname))
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: reply.reply, products: reply.products },
@@ -69,6 +90,9 @@ export default function ChatPanel() {
         onClick={() => setOpen(true)}
         aria-label="Open shop assistant chat"
       >
+        <span className="chat-launcher-icon" aria-hidden="true">
+          💬
+        </span>
         Ask us anything
       </button>
     )
