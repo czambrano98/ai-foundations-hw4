@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { categoryLabel, fetchCategories, fetchProducts } from '../api'
+import { useChatResults } from '../chatResults'
 import type { CategoryCount, Product } from '../types'
 import ProductCard from '../components/ProductCard'
 
@@ -13,6 +14,9 @@ export default function Products() {
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Product matches pushed here by the chat assistant (Problem 7).
+  const chatResults = useChatResults()
 
   useEffect(() => {
     fetchCategories().then(setCategories).catch(() => setCategories([]))
@@ -55,6 +59,32 @@ export default function Products() {
         <p style={{ color: 'var(--slate)', marginBottom: 32 }}>
           Everything we currently make, straight from the shop floor.
         </p>
+
+        {chatResults.results.length > 0 && (
+          <>
+            <section className="assistant-results">
+              <div className="assistant-results-head">
+                <div>
+                  <div className="eyebrow">From the shop assistant</div>
+                  <h2 style={{ marginBottom: 4 }}>
+                    {chatResults.results.length}{' '}
+                    {chatResults.results.length === 1 ? 'match' : 'matches'} for
+                    “{chatResults.query}”
+                  </h2>
+                </div>
+                <button className="btn btn-outline" onClick={chatResults.clear}>
+                  Clear
+                </button>
+              </div>
+              <div className="product-grid">
+                {chatResults.results.map((product) => (
+                  <ProductCard key={product.product_id} product={product} />
+                ))}
+              </div>
+            </section>
+            <h2 style={{ marginBottom: 20 }}>Browse everything</h2>
+          </>
+        )}
 
         <div className="toolbar">
           <div className="chips">

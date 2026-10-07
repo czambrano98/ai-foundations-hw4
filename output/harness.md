@@ -663,3 +663,74 @@ cards shown in the widget are still hydrated from the database by `/api/chat`
   XL is sold out and names the sizes that are in stock. "How much is it and what
   sizes are in stock?" replies $58 with the in-stock sizes and names XS and XL as
   sold out.
+
+---
+
+## Problem 7 — Chat Search That Updates the Page
+
+When a shopper asks about a kind of item in the chat, the matching products now
+appear as full cards on the page, not just as text in the chat bubble.
+
+### How search results reach the page
+
+```
+shopper types in ChatPanel
+        |
+        v
+POST /api/chat  ->  agent searches catalogue, returns AgentReply.product_ids
+        |
+        v
+/api/chat hydrates ids -> ChatResponse.products  (ProductCard[]: image, name,
+        |                                           price, short info, id, bg)
+        v
+ChatPanel receives products
+        |  chatResults.show(query, products)   (React context)
+        |  navigate('/products')
+        v
+Products page reads chatResults -> renders them with the same <ProductCard>
+        |
+        v
+click a card -> /products/:id -> existing detail view (Problem 3)
+```
+
+**The API contract** was already in place from Problem 5: the agent returns
+structured matches by id, and `/api/chat` turns them into `ProductCard` objects
+(`image_url`, `name`, `price`, `short_description`, `image_bg`, `category`,
+`in_stock`). Those are exactly the fields a card needs, so Problem 7 is mostly a
+frontend change: render them on the page instead of as links in the bubble.
+
+**Passing results from the floating chat to the page.** The chat widget is
+mounted once in `App.tsx`, outside `<Routes>`, so it stays open across
+navigation. It hands its matches to the page through a small React context,
+`chatResults.tsx` (`show`, `clear`, `results`, `query`), rather than through
+props, because the chat and the page are in different parts of the tree. On a
+reply with products, the panel calls `show(query, products)` and navigates to
+`/products`.
+
+**Rendering.** The Products page shows a highlighted "From the shop assistant"
+section at the top with the matched cards and a Clear button, above the normal
+"Browse everything" catalogue. Both use the same `<ProductCard>` component.
+
+### Single-item behavior is preserved
+
+`<ProductCard>` links to `/products/:id` regardless of where the card came from,
+and the detail page fetches that id from `/api/products/:id`. So a card the chat
+just injected opens the same large-image detail view built in Problem 3. Nothing
+about the card is special-cased; it is the same component with the same link.
+
+### Why the cards live on the Products page (not in the chat bubble)
+
+The panel is 370px wide, too narrow for real cards with images. Putting the
+matches on the Products page is what "updates the page" means here, gives the
+cards room, and reuses the existing grid and card component rather than building a
+second card style. The bubble keeps a short "Showing N items on the page" note so
+the chat still acknowledges the result.
+
+### Verified
+
+- `POST /api/chat` "what hoodies do you have?" returns 6 products carrying every
+  field the card needs (`image_url`, `name`, `price`, `short_description`,
+  `image_bg`, `in_stock`, `category`, `product_id`).
+- The detail endpoint resolves a chat-returned id
+  (`basic-hoodie-big-yale`), so clicking an injected card opens its detail view.
+- `npm run build` passes with the new context and page section.

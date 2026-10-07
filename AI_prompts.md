@@ -262,6 +262,41 @@ blur together.
 
 ---
 
+## Problem 7 — Chat Search That Updates the Page
+
+**Initial prompt**
+
+> now, we're on Problem 7: Chat search that updates the page
+> now, we'll add a feature to the site so that when a customer asks about a type
+> of item (e.g., "what hoodies do you have?"), the agent should search the
+> catalogue and the website should dynamically show these matching items as
+> product cards (image, name, price, short info). this is an API contract: the
+> agent returns structured product matches and then the front end renders them on
+> the website
+> after the dynamic product cards are loaded by this new feature, we'll make sure
+> that the same single-item behavior we built on problem 3 still works (that is,
+> each product card, inc the ones the chat just put on the page, should still open
+> that detail view (large image + full info) when clicked)
+> we should also update prompts/prompt.md and output/harness.md so it's clear how
+> search results reach the page
+
+**Follow-up prompt**
+
+> (none needed — the feature, the API-contract framing, the single-item
+> requirement, and the two doc updates were all specified.)
+
+**What was lacking after the first prompt**
+
+The structured API contract the prompt asks for already existed from Problem 5:
+`/api/chat` already returned product matches with image, name, price, and short
+info. So the real gap was only on the front end, where those matches were being
+shown as small text links inside the chat bubble instead of as product cards on
+the page. The main design judgment left open was where on the site the cards
+should appear; the Products page was chosen because the floating chat panel is too
+narrow for real cards and the page already has the grid and card component.
+
+---
+
 <!-- Template for the next problem — copy, fill in, delete this comment.
 
 ## Problem N — [Title]

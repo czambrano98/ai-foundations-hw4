@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
-import { formatPrice, sendChatMessage } from '../api'
+import { useNavigate } from 'react-router-dom'
+import { sendChatMessage } from '../api'
+import { useChatResults } from '../chatResults'
 import type { ChatMessage } from '../types'
 
 const GREETING: ChatMessage = {
@@ -16,6 +17,8 @@ export default function ChatPanel() {
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
   const logRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
+  const chatResults = useChatResults()
 
   // Keep the newest message in view as the conversation grows.
   useEffect(() => {
@@ -37,6 +40,13 @@ export default function ChatPanel() {
         ...prev,
         { role: 'assistant', content: reply.reply, products: reply.products },
       ])
+      // When the agent returns product matches, show them as cards on the
+      // Products page and take the shopper there. The floating panel stays open
+      // on top, so the conversation continues.
+      if (reply.products && reply.products.length > 0) {
+        chatResults.show(text, reply.products)
+        navigate('/products')
+      }
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -81,16 +91,9 @@ export default function ChatPanel() {
           <div key={index} className={`bubble ${message.role}`}>
             {message.content}
             {message.products && message.products.length > 0 && (
-              <div style={{ marginTop: 10, display: 'grid', gap: 6 }}>
-                {message.products.map((product) => (
-                  <Link
-                    key={product.product_id}
-                    to={`/products/${product.product_id}`}
-                    style={{ fontSize: '0.85rem', fontWeight: 600 }}
-                  >
-                    {product.name}, {formatPrice(product.price)}
-                  </Link>
-                ))}
+              <div className="bubble-note">
+                Showing {message.products.length}{' '}
+                {message.products.length === 1 ? 'item' : 'items'} on the page.
               </div>
             )}
           </div>
