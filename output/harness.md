@@ -255,7 +255,7 @@ What's tracked (37 files) and what isn't:
 | Excluded | Why |
 |---|---|
 | `node_modules/` (95 MB) | Reinstallable from `package-lock.json` |
-| `.venv/` (37 MB) | Reinstallable from `backend/requirements.txt` |
+| `.venv/` (37 MB) | Reinstallable from `requirements.txt` |
 | `data/` (4 MB) | Fully reproducible: `unzip data.zip` + `scripts/add_category.py`. Committing the binary `.db` would churn history every time the category script runs. |
 | `dist/` | Build output |
 | `.env` | Pre-emptive — the Problem 5 agent will need an API key, and it must never be committed |
@@ -1036,7 +1036,7 @@ One-time setup (from `Homework 4/`):
 unzip data.zip
 python scripts/add_category.py
 python scripts/add_image_bg.py
-python -m venv .venv && .venv/Scripts/python -m pip install -r backend/requirements.txt
+python -m venv .venv && .venv/Scripts/python -m pip install -r requirements.txt
 cd frontend && npm install
 ```
 Run (two terminals):

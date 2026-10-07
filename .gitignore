@@ -10,11 +10,9 @@ dist/
 dist-ssr/
 *.local
 
-# Extracted data.
-# data.zip is committed as the source of truth; everything under data/ is
-# reproducible from it via `unzip data.zip` + `python scripts/add_category.py`.
-# Keeping the unpacked copy out avoids committing a binary DB that changes
-# every time the category script runs.
+# Data pack — never commit the database or product images. The grader/user
+# places the provided data.zip in the project root (see README) and unzips it.
+data.zip
 data/
 
 # Secrets — API keys for the Problem 5 agent land here

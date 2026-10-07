@@ -94,6 +94,7 @@ def _load_env() -> None:
     """
     candidates = [
         BACKEND_DIR / ".env",
+        PROJECT_ROOT / ".env",  # project-root .env (copied from .env.example)
         PROJECT_ROOT / "env.txt",
         PROJECT_ROOT.parent / "env.txt",  # AI Foundations folder
     ]

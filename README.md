@@ -5,35 +5,38 @@ reading `data/campus_customs.db`, and a React + Vite + TypeScript frontend.
 
 ## First-time setup
 
-Unzip the data (creates `data/campus_customs.db` and `data/products/`):
+**1. Place the data pack.** The database and product images are not in this repo.
+Put the provided `data.zip` in the project root and unzip it (this creates
+`data/campus_customs.db` and `data/products/`):
 
 ```bash
 unzip data.zip
 ```
 
-Add the derived `category` column (see `output/harness.md`, Problem 2a):
+**2. Install dependencies:**
+
+```bash
+# backend (Python)
+python -m venv .venv
+.venv/Scripts/python -m pip install -r requirements.txt
+
+# frontend (Node)
+cd frontend && npm install && cd ..
+```
+
+**3. Prepare the database.** Add the derived `category` column (harness Problem
+2a) and sample each photo's background color into `image_bg`:
 
 ```bash
 .venv/Scripts/python scripts/add_category.py
-```
-
-Sample each product photo's own background color into an `image_bg` column, so
-the storefront can paint every card tile to match its image:
-
-```bash
 .venv/Scripts/python scripts/add_image_bg.py
 ```
 
-
-Install dependencies:
+**4. Set the API key.** Copy `.env.example` to `.env` and fill in your
+`PORTKEY_API_KEY` (the agent needs it; products and auth work without it):
 
 ```bash
-# backend
-python -m venv .venv
-.venv/Scripts/python -m pip install -r backend/requirements.txt
-
-# frontend
-cd frontend && npm install && cd ..
+cp .env.example .env   # then edit .env
 ```
 
 ## Running
@@ -61,10 +64,10 @@ origin and there are no CORS issues in development.
 ### Agent API key
 
 The chat agent calls a model through the Portkey gateway and needs
-`PORTKEY_API_KEY`. On first use the backend looks for it in, in order:
-`backend/.env`, `Homework 4/env.txt`, then the parent `AI Foundations/env.txt`
-(where it already lives). The agent is built lazily, so the rest of the API
-(products, auth) runs even without the key.
+`PORTKEY_API_KEY`. On first use the backend looks for it in this order:
+the environment, `backend/.env`, the project-root `.env` (copy from
+`.env.example`), then an `env.txt` in the root or its parent. The agent is built
+lazily, so the rest of the API (products, auth) runs even without the key.
 
 ## API
 
