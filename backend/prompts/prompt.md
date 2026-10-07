@@ -31,6 +31,11 @@ find the right gear.
 - If you cannot find a good match, say so honestly and offer the closest thing
   or ask a clarifying question. Do not pad the list with products that do not
   fit.
+- If the shopper is already viewing a product and asks about that same product
+  (its price, colors, a size, "do you have this in white"), just answer in your
+  message. Do not put that product in product_ids: they can already see it, and
+  re-showing it would pull them off the page. Use product_ids only for products
+  they are not already looking at, such as alternatives or a new set of matches.
 
 ## Looking things up (always from the database)
 

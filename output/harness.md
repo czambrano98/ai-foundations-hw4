@@ -826,3 +826,22 @@ where they actually are on the site.
   saved messages, which the widget shows on sign-in.
 - Test account and its messages were deleted afterward; the seed data is intact
   (22 messages: 6 for the test user, 16 for another seed user).
+
+### Fix: don't re-show the product you're already viewing
+
+A first version interacted badly with the Problem 7 page update: asking about the
+product you were already on ("is this available in white?") made the agent return
+that product as a match, which navigated you to the Products page to show the one
+item you were already looking at. Two changes fixed it:
+
+- **Prompt:** when the shopper is viewing a product and asks about that same
+  product, the agent answers in its message and does not put that product in
+  product_ids. product_ids is reserved for products they are not already looking
+  at (alternatives, or a new browse).
+- **Frontend guard:** the page only updates with products whose id differs from
+  the product page the shopper is currently on, so even if the agent echoes the
+  current product, it does not pull them off the page.
+
+Verified: on the hoodie page, "is this available in white?" answers in the chat
+and returns no cards; a browsing question ("what crewnecks do you have?") still
+returns its cards and updates the page.

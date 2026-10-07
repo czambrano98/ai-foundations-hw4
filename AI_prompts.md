@@ -315,19 +315,22 @@ narrow for real cards and the page already has the grid and card component.
 
 **Follow-up prompt**
 
-> (I pressed enter too soon and re-sent the full prompt; no other follow-up was
-> needed. The appropriate table already existed in the schema, the deps pattern
-> and page-context requirement were specified, and guest behavior was called out.)
+> I tested the chat, and when I asked if the hoodie was available in white,
+> instead of showing the results for that, it just showed me the product that I
+> was viewing
 
 **What was lacking after the first prompt**
 
-Nothing was missing from the instructions, and the right table (`chat_messages`,
-with user_id, role, content, products_json, created_at) already existed in the
-seed schema, so no new table was needed. The judgment calls were implementation
-choices: using PydanticAI `instructions` rather than `system_prompt` for the
-customer and page context (so they stay fresh when past turns are replayed), and
-replaying stored turns as `message_history` for memory while exposing only name
-and email to the agent, never the password hash.
+The page-context feature worked, but it interacted badly with the Problem 7
+"show results on the page" behavior: asking about the product you are already
+viewing made the agent return that product as a match, which navigated you to the
+Products page to show the single item you were already looking at. The fix was to
+tell the agent not to echo the currently-viewed product back as a card (answer in
+the message instead), plus a frontend guard that only updates the page with
+products the shopper is not already viewing. (Also note: the right table,
+`chat_messages`, already existed in the seed schema, and the chosen patterns were
+PydanticAI `instructions` for fresh per-run context and replayed `message_history`
+for memory, exposing only name and email to the agent, never the password hash.)
 
 ---
 

@@ -56,16 +56,23 @@ export default function ChatPanel() {
     setSending(true)
 
     try {
-      const reply = await sendChatMessage(text, currentProductId(location.pathname))
+      const pageId = currentProductId(location.pathname)
+      const reply = await sendChatMessage(text, pageId)
+
+      // Don't surface the product the shopper is already viewing as a "result":
+      // answering "is this in white?" should not yank them to a page showing the
+      // same item. Only products they are not already looking at update the page.
+      const pageResults = (reply.products ?? []).filter(
+        (product) => product.product_id !== pageId,
+      )
+
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: reply.reply, products: reply.products },
+        { role: 'assistant', content: reply.reply, products: pageResults },
       ])
-      // When the agent returns product matches, show them as cards on the
-      // Products page and take the shopper there. The floating panel stays open
-      // on top, so the conversation continues.
-      if (reply.products && reply.products.length > 0) {
-        chatResults.show(text, reply.products)
+
+      if (pageResults.length > 0) {
+        chatResults.show(text, pageResults)
         navigate('/products')
       }
     } catch {
