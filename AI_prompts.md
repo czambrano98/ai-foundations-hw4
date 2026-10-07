@@ -362,6 +362,32 @@ front-end items instead of two, so we over-delivered there.
 
 ---
 
+## Problem 10 — Style the Website
+
+**Initial prompt**
+
+> now, we're on Problem 10: Style the website
+> we should add creative designs so the site feels like a real Campus Customs
+> storefront (fonts, color, hierarchy, motion, product presentation, chat feel,
+> etc). we'll get points for being creative, so keep that in mind
+> we'll then write output/design.md, describing what we changed and why it should
+> help customers stick around and buy. it should be concrete and short
+
+**Follow-up prompt**
+
+> (none needed — the brief named the areas to work on, flagged that creativity is
+> graded, and specified the design.md deliverable, so one creative pass covered it.)
+
+**What was lacking after the first prompt**
+
+Nothing was missing, but the key judgment was restraint: a brand palette was
+already locked in from the earlier request to match yalebulldogblue.com, so the
+creative work had to add character through type, motion, and detail without
+reintroducing off-brand colors, and had to keep motion accessible (disabled under
+prefers-reduced-motion) rather than decorative for its own sake.
+
+---
+
 <!-- Template for the next problem — copy, fill in, delete this comment.
 
 ## Problem N — [Title]

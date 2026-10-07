@@ -17,7 +17,10 @@ export default function NavBar() {
     <header className="nav">
       <div className="shell nav-inner">
         <NavLink to="/" className="brand">
-          Campus <span>Customs</span>
+          <span className="brand-mark" aria-hidden="true">CC</span>
+          <span>
+            Campus <span className="brand-accent">Customs</span>
+          </span>
         </NavLink>
 
         <nav className="nav-links">

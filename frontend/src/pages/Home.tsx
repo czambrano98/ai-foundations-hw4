@@ -25,17 +25,19 @@ export default function Home() {
     <>
       <section className="hero">
         <div className="shell">
-          <div className="eyebrow">New Haven, since 1973</div>
-          <h1>Yale, worn well.</h1>
-          <p>
+          <div className="eyebrow fade-up">New Haven, since 1973</div>
+          <h1 className="fade-up">Yale, worn well.</h1>
+          <p className="fade-up-2">
             We have been on Broadway long enough to know what survives four New
             Haven winters, and what someone still reaches for at their twentieth
             reunion. Everything here is printed and stitched by us, a few blocks
             from where you will wear it.
           </p>
-          <Link to="/products" className="btn btn-primary">
-            Shop the collection
-          </Link>
+          <div className="fade-up-3">
+            <Link to="/products" className="btn btn-primary">
+              Shop the collection
+            </Link>
+          </div>
         </div>
       </section>
 

@@ -109,9 +109,14 @@ export default function ChatPanel() {
   return (
     <div className="chat-panel" role="dialog" aria-label="Shop assistant">
       <div className="chat-head">
-        <div>
-          <div className="title">Shop Assistant</div>
-          <div className="sub">Ask us anything about our gear</div>
+        <div className="chat-ident">
+          <span className="chat-avatar" aria-hidden="true">CC</span>
+          <div>
+            <div className="title">
+              Shop Assistant <span className="online-dot" aria-hidden="true" />
+            </div>
+            <div className="sub">Usually replies in a few seconds</div>
+          </div>
         </div>
         <button className="chat-close" onClick={() => setOpen(false)} aria-label="Close chat">
           &times;

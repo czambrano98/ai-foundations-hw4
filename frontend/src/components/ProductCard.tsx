@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import type { Product } from '../types'
-import { formatPrice } from '../api'
+import { categoryLabel, formatPrice } from '../api'
 
 export default function ProductCard({ product }: { product: Product }) {
   return (
@@ -9,6 +9,7 @@ export default function ProductCard({ product }: { product: Product }) {
           into its frame. The catalogue mixes black and white backgrounds, so a
           single frame color would leave a hard seam on one group or the other. */}
       <div className="card-image" style={{ background: product.image_bg }}>
+        <span className="card-tag">{categoryLabel(product.category)}</span>
         <img src={product.image_url} alt={product.name} loading="lazy" />
       </div>
       <div className="card-body">
@@ -20,6 +21,7 @@ export default function ProductCard({ product }: { product: Product }) {
             {product.in_stock ? 'In stock' : 'Sold out'}
           </span>
         </div>
+        <span className="card-view">View details &rarr;</span>
       </div>
     </Link>
   )

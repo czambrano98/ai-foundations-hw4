@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom'
+import { Link, Route, Routes } from 'react-router-dom'
 import NavBar from './components/NavBar'
 import ChatPanel from './components/ChatPanel'
 import Home from './pages/Home'
@@ -11,6 +11,13 @@ import SignUp from './pages/SignUp'
 export default function App() {
   return (
     <div className="app">
+      <div className="announce">
+        Printed &amp; embroidered in New Haven
+        <span className="sep">·</span>
+        Family-run since 1973
+        <span className="sep">·</span>
+        Pickup at 57 Broadway
+      </div>
       <NavBar />
 
       <main>
@@ -25,16 +32,33 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <div className="shell footer-inner">
-          <div>
-            <strong style={{ color: '#fff' }}>Campus Customs</strong>
-            <br />
-            57 Broadway, New Haven, CT · Since 1973
+        <div className="shell">
+          <div className="footer-cols">
+            <div className="footer-col">
+              <div className="footer-brand">Campus Customs</div>
+              Yale apparel, printed and embroidered by hand in New Haven since
+              1973. Built for the Blue, made to last.
+            </div>
+            <div className="footer-col">
+              <h4>Shop</h4>
+              <Link to="/products">All products</Link>
+              <Link to="/products?category=hoodie">Hoodies</Link>
+              <Link to="/products?category=crewneck">Crewnecks</Link>
+              <Link to="/products?category=t-shirt">T-shirts</Link>
+            </div>
+            <div className="footer-col">
+              <h4>Visit</h4>
+              <span style={{ display: 'block', marginBottom: 7 }}>
+                57 Broadway
+                <br />
+                New Haven, CT
+              </span>
+              <Link to="/about">Our story</Link>
+            </div>
           </div>
-          <div>
-            Printed and embroidered in house.
-            <br />
-            Built for Yale, made in New Haven.
+          <div className="footer-bottom">
+            <span>© {new Date().getFullYear()} Campus Customs</span>
+            <span>Boola Boola.</span>
           </div>
         </div>
       </footer>

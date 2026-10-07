@@ -873,3 +873,25 @@ and "why" for each, is in `output/usability.md`. Technical summary:
 The agent now has six tools (search, get_product, get_product_description,
 get_price, get_stock, list_categories), guided by the prompt on when to use the
 combined vs. narrow lookups.
+
+---
+
+## Problem 10 — Creative Storefront Styling
+
+A visual pass to make the site feel like a real Campus Customs shop. Full
+rationale is in `output/design.md`. Technical summary:
+
+- **Type:** Fraunces (display serif) + Inter (UI sans), loaded from Google Fonts
+  in `index.html`, degrading to system fonts offline. `--serif`/`--sans` updated.
+- **Storefront cues:** top announcement bar and a "CC" nav monogram
+  (`NavBar.tsx`); a three-column footer (`App.tsx`).
+- **Motion:** `fadeUp` / `bubbleIn` / `panelIn` keyframes for hero, sections,
+  chat panel and messages; button hover lift; card image zoom. All wrapped in a
+  `prefers-reduced-motion: reduce` guard that disables them.
+- **Product cards:** hover image zoom, category chip, and a "View details" cue
+  (`ProductCard.tsx`).
+- **Chat feel:** "CC" avatar, pulsing online dot, and a reassurance line in the
+  panel header (`ChatPanel.tsx`).
+
+Palette unchanged (the Yale navy/neutrals matched earlier). Build passes; bundle
+is ~125 KB gzipped (react-markdown from Problem 9 is the bulk).
