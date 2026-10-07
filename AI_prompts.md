@@ -418,6 +418,38 @@ $58) and the dynamic cards are real, not mocked.
 
 ---
 
+## Problem 12 — Audit Trail, Safety, and Finish Harness
+
+**Initial prompt**
+
+> now we're on Problem 12: Audit trail, safety, and finish harness
+> keep an append-only output/audit_trail.json of agent-loop activity (time, tool
+> name, short args/result, stop reason) that should't be wiped between runs
+> also, we should think of some safety rules to give to the agent and put them
+> into prompts/prompt.md
+> then, we should finish output/harness.md so it's clear how the system works. the
+> file should include: model fields in models.py and why we chose them, tools and
+> abilities, safety rules, and specs (loop limits, result caps, models, how to run
+> front + back)
+
+**Follow-up prompt**
+
+> (none needed — the audit fields, the persistence requirement, the safety-rules
+> task, and the exact harness contents were all specified.)
+
+**What was lacking after the first prompt**
+
+The spec was complete; the notable outcome was that building the audit trail
+immediately paid off by exposing a real bug. Its first entries showed the agent
+searching three times and failing to find the "Yale Mom Crewneck" (a generic
+token plus an alphabetical limit buried the relevant match), which prompted a
+search-relevance fix. A second gap surfaced while testing safety: a harsher
+jailbreak tripped the provider content filter in a wrapped exception that the
+old handler missed and returned as a 502, so the handler was broadened to detect
+content-filter blocks by message and deflect them safely.
+
+---
+
 <!-- Template for the next problem — copy, fill in, delete this comment.
 
 ## Problem N — [Title]

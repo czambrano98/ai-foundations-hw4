@@ -168,16 +168,16 @@ async def run_chat(
     message: str,
     deps: ChatDeps | None = None,
     message_history: list[ModelMessage] | None = None,
-) -> AgentReply:
-    """Run one shopper message through the agent and return its structured reply.
+):
+    """Run one shopper message through the agent and return the full run result.
 
     `deps` carries who is chatting and the current page; `message_history` is the
-    shopper's earlier turns, so the agent has conversational memory.
+    shopper's earlier turns, so the agent has conversational memory. The caller
+    reads `.output` for the reply and `.new_messages()` for the audit trail.
     """
     agent = get_agent()
-    result = await agent.run(
+    return await agent.run(
         message,
         deps=deps or ChatDeps(),
         message_history=message_history,
     )
-    return result.output

@@ -20,7 +20,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-import openai
 from pydantic_ai.messages import (
     ModelMessage,
     ModelRequest,
@@ -30,6 +29,7 @@ from pydantic_ai.messages import (
 )
 
 import agent
+import audit
 import auth
 from agent import ChatDeps
 from models import ChatResponse, ProductCard
@@ -442,16 +442,26 @@ async def chat(request: ChatRequest, user: sqlite3.Row | None = Depends(optional
         if user is not None:
             history = rows_to_message_history(load_history_rows(con, user["id"]))
 
+    # Audit trail: group this turn's activity under one id, tagged by who sent it.
+    turn_id = audit.new_turn_id()
+    who = str(user["id"]) if user is not None else "guest"
+
     try:
-        reply = await agent.run_chat(message, deps=deps, message_history=history)
-    except openai.BadRequestError as exc:
-        # The provider's content filter rejected the input (e.g. a jailbreak
-        # attempt). Deflect safely rather than erroring.
-        if "content_filter" in str(exc):
+        result = await agent.run_chat(message, deps=deps, message_history=history)
+        reply = result.output
+    except Exception as exc:
+        # The provider's content filter rejects some jailbreak/abuse attempts with
+        # a 400. PydanticAI may wrap that, so detect it by message rather than by
+        # exception type, and deflect safely instead of erroring. Anything else is
+        # a genuine gateway failure -> clean 502.
+        if "content_filter" in str(exc).lower():
+            audit.record_event(turn_id, who, "content_filter", message)
             return ChatResponse(reply=CONTENT_FILTER_REPLY, products=[])
+        audit.record_event(turn_id, who, "error", str(exc))
         raise HTTPException(status_code=502, detail=f"Shop assistant unavailable: {exc}")
-    except Exception as exc:  # surface other agent/gateway failures as a clean 502
-        raise HTTPException(status_code=502, detail=f"Shop assistant unavailable: {exc}")
+
+    # Record the loop's tool calls and the final reply, append-only.
+    audit.record_run(turn_id, who, result.new_messages(), reply.message)
 
     cards: list[ProductCard] = []
     if reply.product_ids:

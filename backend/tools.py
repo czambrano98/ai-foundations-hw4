@@ -161,11 +161,31 @@ def search_catalogue(
             term = f"%{token}%"
             params += [term, term, term]
 
+    # Fetch the full matching set (the catalogue is ~100 rows, so this is cheap),
+    # then rank in Python and slice to the limit. Pre-limiting in SQL by
+    # alphabetical name buried specific matches: a query like "Yale Mom Crewneck"
+    # matches every crewneck on the "crewneck" token, and the relevant "mom"
+    # product fell past an alphabetical cut. Ranking by token hits (name weighted
+    # highest) over the whole match set surfaces the product the shopper named.
     def build(where: list[str], args: list) -> tuple[str, list]:
         sql = "SELECT * FROM catalogue"
         if where:
             sql += " WHERE " + " AND ".join(where)
-        return sql + " ORDER BY name LIMIT ?", args + [limit]
+        return sql + " ORDER BY name", args
+
+    def relevance(row: sqlite3.Row) -> int:
+        name = row["name"].lower()
+        tags = row["search_tags"].lower()
+        desc = row["description"].lower()
+        score = 0
+        for token in tokens:
+            if token in name:
+                score += 3
+            elif token in tags:
+                score += 2
+            elif token in desc:
+                score += 1
+        return score
 
     with _connect() as con:
         sql, args = build(clauses, params)
@@ -177,6 +197,10 @@ def search_catalogue(
         if not rows and (tokens and base_clauses):
             sql, args = build(base_clauses, list(base_params))
             rows = con.execute(sql, args).fetchall()
+
+        if tokens:
+            rows = sorted(rows, key=lambda r: (-relevance(r), r["name"]))
+        rows = rows[:limit]
 
         out = []
         for row in rows:

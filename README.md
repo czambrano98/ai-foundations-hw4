@@ -90,7 +90,8 @@ backend/auth.py          Password hashing (PBKDF2) and signed session tokens
 backend/agent.py         Shop chat agent: prompt + Portkey model + tools wiring
 backend/tools.py         Read-only catalogue tools the agent can call
 backend/models.py        Pydantic / PydanticAI types (chat reply, product card)
-backend/prompts/prompt.md  System prompt (voice + safety); grows later
+backend/audit.py         Append-only agent-loop audit trail
+backend/prompts/prompt.md  System prompt (voice + safety rules)
 scripts/add_category.py  Problem 2a category normalization
 scripts/add_image_bg.py  Per-photo background color sampling
 frontend/src/
@@ -99,7 +100,11 @@ frontend/src/
   types.ts               shared TypeScript interfaces
   components/            NavBar, ProductCard, ChatPanel
   pages/                 Home, Products, ProductDetail, About, Login, SignUp
-output/harness.md        Running design + data notes
+output/harness.md        Running design + data notes + system reference
+output/audit_trail.json  Append-only log of agent tool calls and stop reasons
+output/usability.md      Problem 9 usability write-up
+output/design.md         Problem 10 design write-up
+output/app_check.html    Problem 11 live-site checks (open in a browser)
 AI_prompts.md            Prompt log for the assignment
 ```
 
