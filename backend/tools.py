@@ -17,6 +17,7 @@ from pathlib import Path
 
 from models import (
     ProductDescription,
+    ProductFull,
     ProductPrice,
     SizeStock,
     StockReport,
@@ -99,13 +100,18 @@ def _summary(row: sqlite3.Row, total_stock: int) -> dict:
 
 
 def search_catalogue(
-    query: str, category: str | None = None, max_results: int = 6
+    query: str,
+    category: str | None = None,
+    max_price: float | None = None,
+    in_stock_only: bool = False,
+    max_results: int = 6,
 ) -> list[dict]:
     """Search the Campus Customs catalogue for products matching free text.
 
     Matches the query against product names, descriptions, and search tags, so
     it handles both garment words ("navy hoodie") and intent words ("gift for
-    my mom", "Harvard-Yale game"). Optionally narrow to one category.
+    my mom", "Harvard-Yale game"). Optionally narrow to one category, a price
+    ceiling, and in-stock items only.
 
     Args:
         query: What the shopper is looking for, in their own words.
@@ -113,6 +119,12 @@ def search_catalogue(
             list_categories (e.g. "hoodie", "crewneck", "t-shirt",
             "quarter-zip", "jacket", "sweatshirt", "long-sleeve-shirt"). Leave
             empty to search all categories.
+        max_price: Optional price ceiling. Pass this for budget queries like
+            "hoodies under $50" (max_price=50) so filtering happens in the
+            database. Do not filter by price yourself.
+        in_stock_only: When True, only return products that have at least one
+            size in stock. Pass this for "what do you have in stock" style
+            questions.
         max_results: Maximum number of products to return (default 6).
 
     Returns:
@@ -121,15 +133,26 @@ def search_catalogue(
         empty if nothing matches.
     """
     limit = max(1, min(max_results, 24))
-    clauses, params = [], []
 
+    # Non-text filters (category, price, stock) apply to both the main search and
+    # the category fallback, so they are kept separate from the text tokens.
+    base_clauses, base_params = [], []
     if category:
-        clauses.append("category = ?")
-        params.append(category)
+        base_clauses.append("category = ?")
+        base_params.append(category)
+    if max_price is not None:
+        base_clauses.append("price <= ?")
+        base_params.append(max_price)
+    if in_stock_only:
+        base_clauses.append(
+            "EXISTS (SELECT 1 FROM inventory i "
+            "WHERE i.product_id = catalogue.product_id AND i.quantity > 0)"
+        )
 
     # Match any meaningful token against name, description, or tags. Matching on
     # ANY token (rather than the whole phrase) means intent queries like
     # "hoodies under $70" still find hoodies instead of matching nothing.
+    clauses, params = list(base_clauses), list(base_params)
     tokens = _tokens(query) if query else []
     if tokens:
         per_token = "(LOWER(name) LIKE ? OR LOWER(description) LIKE ? OR LOWER(search_tags) LIKE ?)"
@@ -138,23 +161,22 @@ def search_catalogue(
             term = f"%{token}%"
             params += [term, term, term]
 
-    sql = "SELECT * FROM catalogue"
-    if clauses:
-        sql += " WHERE " + " AND ".join(clauses)
-    sql += " ORDER BY name LIMIT ?"
-    params.append(limit)
+    def build(where: list[str], args: list) -> tuple[str, list]:
+        sql = "SELECT * FROM catalogue"
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        return sql + " ORDER BY name LIMIT ?", args + [limit]
 
     with _connect() as con:
-        rows = con.execute(sql, params).fetchall()
+        sql, args = build(clauses, params)
+        rows = con.execute(sql, args).fetchall()
 
-        # If the text tokens knocked everything out but a category was given,
-        # fall back to the category listing: "show me hoodies" with noisy
-        # wording should still return hoodies.
-        if not rows and category:
-            rows = con.execute(
-                "SELECT * FROM catalogue WHERE category = ? ORDER BY name LIMIT ?",
-                (category, limit),
-            ).fetchall()
+        # If noisy wording knocked out all text matches but other filters were
+        # given (e.g. a category), fall back to those filters without the tokens:
+        # "show me hoodies under $50" should still return hoodies under $50.
+        if not rows and (tokens and base_clauses):
+            sql, args = build(base_clauses, list(base_params))
+            rows = con.execute(sql, args).fetchall()
 
         out = []
         for row in rows:
@@ -281,6 +303,52 @@ def get_stock(product_id: str, size: str | None = None) -> StockReport | str:
         total_stock=total,
         in_stock=(sizes[0].in_stock if requested else total > 0),
         requested_size=requested,
+    )
+
+
+def get_product(product_id: str) -> ProductFull | str:
+    """Get everything about one product at once: description, price, and stock.
+
+    Prefer this over separate calls when the shopper asks broadly about a single
+    product (two or more of: what it is, price, colors, sizes, availability), so
+    it takes one tool call instead of several. For a single fact, the narrower
+    tools (get_price, get_stock, get_product_description) are fine.
+
+    Args:
+        product_id: The product_id from a search_catalogue result.
+
+    Returns:
+        A ProductFull with description, colors, price, and per-size stock, or an
+        error string if no product has that id.
+    """
+    with _connect() as con:
+        row = con.execute(
+            "SELECT * FROM catalogue WHERE product_id = ?", (product_id,)
+        ).fetchone()
+        if row is None:
+            return f"No product has the id '{product_id}'."
+        stock_rows = con.execute(
+            "SELECT size, quantity FROM inventory WHERE product_id = ?",
+            (product_id,),
+        ).fetchall()
+
+    by_size = {r["size"]: r["quantity"] for r in stock_rows}
+    sizes = [
+        SizeStock(size=s, quantity=by_size[s], in_stock=by_size[s] > 0)
+        for s in SIZE_ORDER
+        if s in by_size
+    ]
+    return ProductFull(
+        product_id=row["product_id"],
+        name=row["name"],
+        category=row["category"],
+        description=row["description"],
+        colors=json.loads(row["colors"]),
+        price=row["price"],
+        sizes=sizes,
+        available_sizes=[s.size for s in sizes if s.in_stock],
+        total_stock=sum(s.quantity for s in sizes),
+        in_stock=any(s.in_stock for s in sizes),
     )
 
 

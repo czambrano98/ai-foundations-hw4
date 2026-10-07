@@ -85,6 +85,26 @@ class StockReport(BaseModel):
     requested_size: str | None = None
 
 
+class ProductFull(BaseModel):
+    """Combined lookup: description, price, and per-size stock in one call.
+
+    Added in Problem 9 so a broad question about one product ("tell me about the
+    Mom hoodie, how much, what sizes") is answered with a single tool call
+    instead of three, cutting model round-trips.
+    """
+
+    product_id: str
+    name: str
+    category: str
+    description: str
+    colors: list[str]
+    price: float
+    sizes: list[SizeStock]
+    available_sizes: list[str]
+    total_stock: int
+    in_stock: bool
+
+
 class AgentReply(BaseModel):
     """Structured output the agent returns.
 

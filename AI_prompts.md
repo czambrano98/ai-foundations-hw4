@@ -334,6 +334,34 @@ for memory, exposing only name and email to the agent, never the password hash.)
 
 ---
 
+## Problem 9 — Usability Improvements
+
+**Initial prompt**
+
+> now, we'll need to choose and implement two front-end usability improvements
+> and two agent/backend usability improvements (which can be new agent tools or
+> things that make the agent run faster and cheaper
+> can you help me brainstorm options?
+> once we decide, we'll write output/usability.md, specifying for each
+> improvement, 1. what we added, and 2. why it helps a campus customs shopper or
+> the business
+
+**Follow-up prompt**
+
+> (via the brainstorm selection) Front end: Markdown in chat replies, shopping
+> filters (stock + price sort), and loading skeletons. Backend: price + in-stock
+> search filters, and a combined get_product tool.
+
+**What was lacking after the first prompt**
+
+The first prompt asked for a brainstorm rather than an immediate build, so what
+was "lacking" was the decision itself: the options had to be laid out with
+trade-offs (which front-end rough edges were real defects, which backend changes
+actually reduce model round-trips) before picking. The shopper chose three
+front-end items instead of two, so we over-delivered there.
+
+---
+
 <!-- Template for the next problem — copy, fill in, delete this comment.
 
 ## Problem N — [Title]

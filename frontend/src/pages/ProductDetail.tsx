@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { categoryLabel, fetchProduct, formatPrice } from '../api'
+import { ProductDetailSkeleton } from '../components/Skeletons'
 import type { ProductDetail as Detail } from '../types'
 
 export default function ProductDetail() {
@@ -27,8 +28,8 @@ export default function ProductDetail() {
   if (loading) {
     return (
       <div className="page">
-        <div className="state">
-          <p>Loading...</p>
+        <div className="shell">
+          <ProductDetailSkeleton />
         </div>
       </div>
     )

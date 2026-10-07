@@ -255,13 +255,41 @@ button.nav-link {
   border-bottom: 1px solid var(--line);
 }
 
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.stock-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.9rem;
+  color: var(--slate);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.stock-toggle input { accent-color: var(--navy); cursor: pointer; }
+.sort-select {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-family: var(--sans);
+  background: var(--paper);
+  color: var(--ink);
+  cursor: pointer;
+}
+.sort-select:focus { outline: none; border-color: var(--navy-soft); }
+
 .search-input {
   padding: 11px 18px;
   border: 1px solid var(--line);
   border-radius: 999px;
   font-size: 0.93rem;
   font-family: var(--sans);
-  min-width: 268px;
+  min-width: 240px;
   background: var(--paper);
   color: var(--ink);
 }
@@ -571,6 +599,21 @@ button.nav-link {
   opacity: 0.85;
 }
 
+/* Markdown rendered inside an assistant bubble: keep spacing tight. */
+.bubble .md > :first-child { margin-top: 0; }
+.bubble .md > :last-child { margin-bottom: 0; }
+.bubble .md p { margin: 0 0 0.5em; }
+.bubble .md ul, .bubble .md ol { margin: 0.25em 0 0.5em; padding-left: 1.25em; }
+.bubble .md li { margin: 0.15em 0; }
+.bubble .md a { color: inherit; text-decoration: underline; }
+.bubble .md strong { font-weight: 700; }
+.bubble .md code {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 0.05em 0.3em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
 /* Assistant-driven results block at the top of the Products page. */
 .assistant-results {
   background: var(--cream);
@@ -628,6 +671,27 @@ button.nav-link {
 
 .state { text-align: center; padding: 88px 20px; color: var(--slate); }
 .state h3 { color: var(--navy-deep); }
+
+/* ---------- Loading skeletons ---------- */
+
+@keyframes shimmer {
+  0% { background-position: -450px 0; }
+  100% { background-position: 450px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--sand) 25%, #f7f7f7 37%, var(--sand) 63%);
+  background-size: 900px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: var(--radius);
+}
+.skel-card { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.skel-img { aspect-ratio: 1 / 1; border-radius: 0; }
+.skel-line { height: 12px; margin: 12px 16px; }
+.skel-line.title { height: 15px; width: 75%; }
+.skel-line.sm { width: 45%; }
+.skel-detail-img { aspect-ratio: 1 / 1; border-radius: var(--radius-lg); }
+.skel-line.lg { height: 26px; width: 60%; }
+.skel-toolbar-filters { display: flex; gap: 12px; align-items: center; }
 
 .app { display: flex; flex-direction: column; min-height: 100vh; }
 .app main { flex: 1; }

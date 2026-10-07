@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import ReactMarkdown from 'react-markdown'
 import { fetchChatHistory, sendChatMessage } from '../api'
 import { useAuth } from '../auth'
 import { useChatResults } from '../chatResults'
@@ -120,7 +121,13 @@ export default function ChatPanel() {
       <div className="chat-log" ref={logRef}>
         {messages.map((message, index) => (
           <div key={index} className={`bubble ${message.role}`}>
-            {message.content}
+            {message.role === 'assistant' ? (
+              <div className="md">
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </div>
+            ) : (
+              message.content
+            )}
             {message.products && message.products.length > 0 && (
               <div className="bubble-note">
                 Showing {message.products.length}{' '}

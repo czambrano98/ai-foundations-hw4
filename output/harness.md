@@ -845,3 +845,31 @@ item you were already looking at. Two changes fixed it:
 Verified: on the hoodie page, "is this available in white?" answers in the chat
 and returns no cards; a browsing question ("what crewnecks do you have?") still
 returns its cards and updates the page.
+
+---
+
+## Problem 9 — Usability Improvements
+
+Five improvements (three front-end, two backend). Full write-up, with the "what"
+and "why" for each, is in `output/usability.md`. Technical summary:
+
+**Front end**
+- **Markdown in chat** (`react-markdown` in `ChatPanel`): assistant replies with
+  `**bold**` and bullet lists now render instead of showing raw asterisks.
+- **Shopping filters** (`Products.tsx`): "In stock only" toggle and price sort,
+  applied client-side to the fetched grid.
+- **Loading skeletons** (`components/Skeletons.tsx`): shimmer placeholders for the
+  product grid and detail page replace the "Loading..." text.
+
+**Agent / backend**
+- **`search_catalogue` price + stock filters**: new `max_price` and
+  `in_stock_only` args filter in SQL; the prompt routes budget/availability
+  queries to them. Fewer model round-trips, more accurate budget results.
+- **Combined `get_product` tool** (`ProductFull` in `models.py`): description +
+  price + per-size stock in one call, so a broad question about one product is
+  one tool call instead of two or three. The narrow Problem 6 tools remain for
+  single-fact questions.
+
+The agent now has six tools (search, get_product, get_product_description,
+get_price, get_stock, list_categories), guided by the prompt on when to use the
+combined vs. narrow lookups.

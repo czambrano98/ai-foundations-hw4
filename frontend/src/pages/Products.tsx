@@ -4,6 +4,7 @@ import { categoryLabel, fetchCategories, fetchProducts } from '../api'
 import { useChatResults } from '../chatResults'
 import type { CategoryCount, Product } from '../types'
 import ProductCard from '../components/ProductCard'
+import { ProductGridSkeleton } from '../components/Skeletons'
 
 export default function Products() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -14,6 +15,11 @@ export default function Products() {
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Shopping filters (Problem 9): in-stock toggle and price sort, applied
+  // client-side to the already-fetched set.
+  const [inStockOnly, setInStockOnly] = useState(false)
+  const [sort, setSort] = useState<'featured' | 'price-asc' | 'price-desc'>('featured')
 
   // Product matches pushed here by the chat assistant (Problem 7).
   const chatResults = useChatResults()
@@ -40,6 +46,15 @@ export default function Products() {
     }, 250)
     return () => clearTimeout(timer)
   }, [category, search])
+
+  // Derive the shown list from the fetched products plus the active filters.
+  const displayed = products
+    .filter((p) => (inStockOnly ? p.in_stock : true))
+    .sort((a, b) => {
+      if (sort === 'price-asc') return a.price - b.price
+      if (sort === 'price-desc') return b.price - a.price
+      return 0 // 'featured' keeps the server's name order
+    })
 
   function selectCategory(next: string) {
     const params = new URLSearchParams(searchParams)
@@ -105,13 +120,37 @@ export default function Products() {
             ))}
           </div>
 
-          <input
-            className="search-input"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search gear, teams, colleges..."
-            aria-label="Search products"
-          />
+          <div className="toolbar-right">
+            <label className="stock-toggle">
+              <input
+                type="checkbox"
+                checked={inStockOnly}
+                onChange={(event) => setInStockOnly(event.target.checked)}
+              />
+              In stock only
+            </label>
+
+            <select
+              className="sort-select"
+              value={sort}
+              onChange={(event) =>
+                setSort(event.target.value as typeof sort)
+              }
+              aria-label="Sort products"
+            >
+              <option value="featured">Sort: Featured</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+
+            <input
+              className="search-input"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search gear, teams, colleges..."
+              aria-label="Search products"
+            />
+          </div>
         </div>
 
         {error && (
@@ -121,26 +160,26 @@ export default function Products() {
           </div>
         )}
 
-        {!error && loading && (
-          <div className="state">
-            <p>Loading the collection...</p>
-          </div>
-        )}
+        {!error && loading && <ProductGridSkeleton />}
 
-        {!error && !loading && products.length === 0 && (
+        {!error && !loading && displayed.length === 0 && (
           <div className="state">
             <h3>Nothing matched</h3>
-            <p>Try a different search, or browse all {categories.reduce((sum, c) => sum + c.count, 0)} styles.</p>
+            <p>
+              {inStockOnly
+                ? 'Nothing in stock matches. Try turning off "In stock only" or a different search.'
+                : `Try a different search, or browse all ${categories.reduce((sum, c) => sum + c.count, 0)} styles.`}
+            </p>
           </div>
         )}
 
-        {!error && !loading && products.length > 0 && (
+        {!error && !loading && displayed.length > 0 && (
           <>
             <p style={{ color: 'var(--slate)', fontSize: '0.9rem', marginBottom: 20 }}>
-              Showing {products.length} {products.length === 1 ? 'style' : 'styles'}
+              Showing {displayed.length} {displayed.length === 1 ? 'style' : 'styles'}
             </p>
             <div className="product-grid">
-              {products.map((product) => (
+              {displayed.map((product) => (
                 <ProductCard key={product.product_id} product={product} />
               ))}
             </div>

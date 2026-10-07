@@ -25,6 +25,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 from models import AgentReply
 from tools import (
     get_price,
+    get_product,
     get_product_description,
     get_stock,
     list_categories,
@@ -147,6 +148,7 @@ def get_agent() -> Agent[None, AgentReply]:
         instructions=load_prompt(),
         tools=[
             search_catalogue,
+            get_product,
             get_product_description,
             get_price,
             get_stock,
